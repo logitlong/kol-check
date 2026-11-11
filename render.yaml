@@ -1,0 +1,10 @@
+# Render 一键部署配置：https://render.com/deploy?repo=<本仓库地址>
+services:
+  - type: web
+    name: kol-check
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/config
+    envVars:
+      - key: HOSTED
+        value: "1"

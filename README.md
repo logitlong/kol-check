@@ -67,6 +67,14 @@
 
 这是一个需要常驻后台的 Node 程序（要抓帖、拉行情、调 AI，一次分析持续几分钟到十几分钟），**不能**用 GitHub Pages 这类纯静态托管。需要一个能运行 Docker 容器或 Node 服务的平台，例如 Render、Railway、Zeabur、Fly.io，或者自己的云服务器。
 
+最省事的方式是 Render 一键部署（仓库里已带 `render.yaml`）：
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/logitlong/kol-check)
+
+用 GitHub 账号登录 Render，点上面的按钮，确认后等几分钟，就会得到一个 `https://….onrender.com` 的网址。免费档闲置 15 分钟会休眠，下次打开要等一分钟左右。
+
+其他平台的通用步骤：
+
 1. Fork 或复制这个仓库到你的 GitHub。
 2. 在托管平台上新建服务，选择「从 GitHub 仓库部署」，选中仓库。平台会自动识别 `Dockerfile`。
 3. 确认环境变量 `HOSTED=1`（Dockerfile 里已经设置；如果平台不用 Docker 而是直接跑 Node，需要手动加上，启动命令为 `npm start`）。
