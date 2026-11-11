@@ -62,7 +62,7 @@ export async function analyze(req, onStage = () => {}) {
   const fetchKey = cleanKey(req.fetchKey) || (HOSTED ? "" : process.env.TWITTERAPI_IO_KEY || "");
   const aiKey = cleanKey(req.ai?.apiKey);
   const effort = EFFORTS.find((e) => e.id === (req.ai?.effort ?? req.effort))?.id;
-  const maxPosts = Math.max(20, Math.min(3200, Math.round(Number(req.maxPosts)) || Number(process.env.X_MAX_POSTS) || 3200));
+  const maxPosts = Math.max(20, Math.min(10000, Math.round(Number(req.maxPosts)) || Number(process.env.X_MAX_POSTS) || 10000)); // 10000 是"全部"的安全上限
 
   // —— 1. 取帖子 ——
   let fetched, sourceLabel;
