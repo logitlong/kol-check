@@ -49,7 +49,7 @@
 | Claude（Anthropic） | [console.anthropic.com](https://console.anthropic.com/settings/keys) | 能看图 |
 | GPT（OpenAI） | [platform.openai.com](https://platform.openai.com/api-keys) | 能看图 |
 | Gemini（Google） | [aistudio.google.com](https://aistudio.google.com/apikey) | 能看图 |
-| DeepSeek | [platform.deepseek.com](https://platform.deepseek.com/api_keys) | 便宜；默认模型不看图 |
+| DeepSeek | [platform.deepseek.com](https://platform.deepseek.com/api_keys) | 便宜；默认模型 `deepseek-flash` 能看图 |
 | 通义千问（阿里云百炼） | [bailian.console.aliyun.com](https://bailian.console.aliyun.com/?tab=model#/api-key) | 看图需换成 qwen-vl 系列模型 |
 | 豆包（火山方舟） | [console.volcengine.com/ark](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey) | 模型一栏填方舟后台的模型名或接入点 ID（ep- 开头） |
 | 其他 | 任何 OpenAI 兼容接口 | 需要自己填接口地址 |
