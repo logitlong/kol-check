@@ -25,9 +25,9 @@ function pump() {
     const job = waiting.shift();
     running++;
     job.status = "running";
-    job.run((stage, done, total) => Object.assign(job, { stage, done: done ?? null, total: total ?? null }))
+    job.run((stage, params, done, total) => Object.assign(job, { stage, stageParams: params ?? {}, done: done ?? null, total: total ?? null }))
       .then((report) => Object.assign(job, { status: "done", report }))
-      .catch((e) => Object.assign(job, { status: "error", error: e.message || "分析失败" }))
+      .catch((e) => Object.assign(job, { status: "error", error: e.message || "分析失败", code: e.code ?? null, params: e.params ?? {} }))
       .finally(() => {
         running--;
         job.run = null; // 丢掉闭包，里面有使用者的 key
@@ -84,20 +84,20 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/api/config" && req.method === "GET") return send(res, 200, capabilities());
 
     if (url.pathname === "/api/analyze" && req.method === "POST") {
-      if (!sameOrigin(req)) return send(res, 403, { error: "forbidden" });
+      if (!sameOrigin(req)) return send(res, 403, { error: "forbidden", code: "forbidden" });
       let body;
       try {
         body = JSON.parse((await readBody(req)) || "{}");
       } catch (e) {
-        return send(res, 400, { error: e.message.includes("过大") ? e.message : "请求格式不对" });
+        return send(res, 400, { error: "请求格式不对", code: "bad_request" });
       }
       const owner = clientIp(req);
       if ([...jobs.values()].some((j) => j.owner === owner && (j.status === "queued" || j.status === "running"))) {
-        return send(res, 429, { error: "你已经有一个分析在进行中，等它跑完再提交下一个" });
+        return send(res, 429, { error: "你已经有一个分析在进行中，等它跑完再提交下一个", code: "busy" });
       }
-      if (waiting.length >= MAX_QUEUED) return send(res, 503, { error: "现在排队的人太多了，请过几分钟再试" });
+      if (waiting.length >= MAX_QUEUED) return send(res, 503, { error: "现在排队的人太多了，请过几分钟再试", code: "queue_full" });
       const id = crypto.randomBytes(12).toString("hex");
-      const job = { status: "queued", stage: "排队中…", done: null, total: null, owner, createdAt: Date.now(), run: (onStage) => analyze(body, onStage) };
+      const job = { status: "queued", stage: "queued", stageParams: {}, done: null, total: null, owner, createdAt: Date.now(), run: (onStage) => analyze(body, onStage) };
       jobs.set(id, job);
       waiting.push(job);
       pump();
@@ -107,11 +107,12 @@ const server = http.createServer(async (req, res) => {
     const jobMatch = url.pathname.match(/^\/api\/jobs\/([a-f0-9]{24})$/);
     if (jobMatch && req.method === "GET") {
       const j = jobs.get(jobMatch[1]);
-      if (!j) return send(res, 404, { error: "任务不存在或已过期，请重新提交" });
+      if (!j) return send(res, 404, { error: "任务不存在或已过期，请重新提交", code: "job_gone" });
       const ahead = j.status === "queued" ? waiting.indexOf(j) : 0;
       return send(res, 200, {
-        status: j.status, stage: j.status === "queued" ? `排队中，前面还有 ${ahead} 个任务` : j.stage,
-        done: j.done, total: j.total, error: j.error, report: j.status === "done" ? j.report : undefined,
+        status: j.status, stage: j.status === "queued" ? "queued" : j.stage,
+        stageParams: j.status === "queued" ? { ahead } : j.stageParams,
+        done: j.done, total: j.total, error: j.error, code: j.code, params: j.params, report: j.status === "done" ? j.report : undefined,
       });
     }
 
@@ -119,7 +120,7 @@ const server = http.createServer(async (req, res) => {
     const repMatch = url.pathname.match(/^\/api\/reports\/([A-Za-z0-9_]{1,15})$/);
     if (repMatch && req.method === "GET") {
       const r = await getReport(repMatch[1]);
-      return r ? send(res, 200, r) : send(res, 404, { error: "还没有这个博主的报告" });
+      return r ? send(res, 200, r) : send(res, 404, { error: "还没有这个博主的报告", code: "no_report" });
     }
 
     if (req.method !== "GET") return send(res, 405, { error: "method not allowed" });
@@ -133,7 +134,7 @@ const server = http.createServer(async (req, res) => {
     }
   } catch (e) {
     console.error("[server]", e.message);
-    send(res, 500, { error: "服务器出错了" });
+    send(res, 500, { error: "服务器出错了", code: "server" });
   }
 });
 

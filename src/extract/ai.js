@@ -9,6 +9,7 @@ import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { SYSTEM, normalizeResult } from "./claude-cli.js";
 import { extractWithRules } from "./rules.js";
+import { AppError } from "../errors.js";
 
 // defaultModel 只是示例，各家模型名经常变，使用者可以在页面上改。
 export const PROVIDERS = [
@@ -32,7 +33,7 @@ export const PROVIDERS = [
 const TEXT_BATCH = 30, IMAGE_BATCH = 8, MAX_IMAGES_PER_POST = 2, CONCURRENCY = 3;
 
 /** 这类错误重试也没用，要直接告诉使用者。 */
-class FatalAiError extends Error {}
+class FatalAiError extends AppError {}
 
 const JSON_SPEC = `
 
@@ -84,14 +85,14 @@ async function resolveBaseUrl(provider, customBaseUrl) {
   try {
     u = new URL(String(customBaseUrl || "").trim());
   } catch {
-    throw new FatalAiError("接口地址格式不对，应类似 https://api.example.com/v1");
+    throw new FatalAiError("ai_url_bad", "接口地址格式不对，应类似 https://api.example.com/v1");
   }
   if (process.env.HOSTED) {
-    if (u.protocol !== "https:") throw new FatalAiError("接口地址必须以 https:// 开头");
+    if (u.protocol !== "https:") throw new FatalAiError("ai_url_https", "接口地址必须以 https:// 开头");
     const addrs = net.isIP(u.hostname) ? [{ address: u.hostname }] : await dns.lookup(u.hostname, { all: true }).catch(() => []);
-    if (!addrs.length || addrs.some((a) => isPrivateAddress(a.address))) throw new FatalAiError("这个接口地址无法使用");
+    if (!addrs.length || addrs.some((a) => isPrivateAddress(a.address))) throw new FatalAiError("ai_url_blocked", "这个接口地址无法使用");
   } else if (!/^https?:$/.test(u.protocol)) {
-    throw new FatalAiError("接口地址必须以 http:// 或 https:// 开头");
+    throw new FatalAiError("ai_url_bad", "接口地址必须以 http:// 或 https:// 开头");
   }
   return u.toString().replace(/\/+$/, "");
 }
@@ -100,6 +101,9 @@ function imageUrl(src) {
   if (!/^https:\/\/pbs\.twimg\.com\//.test(src)) return null; // 只把 X 自己的图片地址交给 AI
   return src.includes("?") ? src : `${src}?name=small`;
 }
+
+const LANG_NAMES = { "zh-CN": "简体中文", "zh-TW": "繁體中文", en: "English", ja: "日本語", ko: "한국어", es: "Español", pt: "Português" };
+export const noteLangLine = (lang) => (LANG_NAMES[lang] && lang !== "zh-CN" ? `\n\n（note 字段请用 ${LANG_NAMES[lang]} 书写。）` : "");
 
 function buildPayload(batch, withImages) {
   return batch.map((p) => ({
@@ -119,9 +123,9 @@ function parseJsonLoose(text) {
   throw new Error("AI 返回的不是合法 JSON");
 }
 
-async function callAnthropic({ apiKey, model, effort }, batch, withImages) {
+async function callAnthropic({ apiKey, model, effort, lang }, batch, withImages) {
   const client = new Anthropic({ apiKey, maxRetries: 4 });
-  const content = [{ type: "text", text: JSON.stringify(buildPayload(batch, withImages)) + (withImages ? IMAGE_NOTE : "") }];
+  const content = [{ type: "text", text: JSON.stringify(buildPayload(batch, withImages)) + (withImages ? IMAGE_NOTE : "") + noteLangLine(lang) }];
   if (withImages) {
     for (const p of batch) {
       if (!p._imgs?.length) continue;
@@ -140,15 +144,15 @@ async function callAnthropic({ apiKey, model, effort }, batch, withImages) {
     if (response.stop_reason === "refusal" || !response.parsed_output) throw new Error("模型没有返回结果");
     return response.parsed_output;
   } catch (e) {
-    if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) throw new FatalAiError("Claude API key 无效或没有权限，请检查后重新填写");
-    if (e instanceof Anthropic.NotFoundError) throw new FatalAiError(`Claude 没有「${model}」这个模型，请换一个`);
-    if (e instanceof Anthropic.BadRequestError && /credit balance/i.test(e.message)) throw new FatalAiError("Claude API 账户余额不足，请先到 Anthropic 后台充值");
+    if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) throw new FatalAiError("ai_key", "Claude API key 无效或没有权限，请检查后重新填写");
+    if (e instanceof Anthropic.NotFoundError) throw new FatalAiError("ai_model", `Claude 没有「${model}」这个模型，请换一个`, { model });
+    if (e instanceof Anthropic.BadRequestError && /credit balance/i.test(e.message)) throw new FatalAiError("ai_balance", "Claude API 账户余额不足，请先到 Anthropic 后台充值");
     throw e;
   }
 }
 
-async function callOpenAICompatible({ apiKey, model, baseUrl }, batch, withImages) {
-  let userContent = JSON.stringify(buildPayload(batch, withImages));
+async function callOpenAICompatible({ apiKey, model, baseUrl, lang }, batch, withImages) {
+  let userContent = JSON.stringify(buildPayload(batch, withImages)) + noteLangLine(lang);
   if (withImages) {
     const parts = [{ type: "text", text: userContent + IMAGE_NOTE }];
     for (const p of batch) {
@@ -182,9 +186,11 @@ async function callOpenAICompatible({ apiKey, model, baseUrl }, batch, withImage
       return parseJsonLoose(Array.isArray(text) ? text.map((t) => t.text ?? "").join("") : text);
     }
     const detail = (await res.text().catch(() => "")).slice(0, 300);
-    if (res.status === 401 || res.status === 403) throw new FatalAiError("AI 的 API key 无效或没有权限，请检查是否填对、是否选对了服务商");
-    if (res.status === 402 || /insufficient|balance|quota|arrear|欠费|余额/i.test(detail)) throw new FatalAiError("AI 账户余额或额度不足，请到对应后台充值");
-    if (res.status === 404 || /model.*(not|does not) (found|exist)|invalid model|模型不存在/i.test(detail)) throw new FatalAiError(`模型名「${model}」或接口地址不对，请对照服务商后台检查`);
+    // 只认明确的余额错误；以前凡是带 quota/balance 字样（比如限流提示）都被误报成“余额不足”
+    const short = detail.replace(/\s+/g, " ").slice(0, 160);
+    if (res.status === 402 || /insufficient[ _]balance|insufficient_quota|credit balance|arrearage|Arrearage|欠费|余额不足/i.test(detail)) throw new FatalAiError("ai_balance", "AI 账户余额或额度不足，请到对应后台充值", { status: res.status, detail: short });
+    if (res.status === 401 || res.status === 403) throw new FatalAiError("ai_key", "AI 的 API key 无效或没有权限，请检查是否填对、是否选对了服务商", { status: res.status, detail: short });
+    if (res.status === 404 || /model.*(not|does not) (found|exist)|invalid model|模型不存在/i.test(detail)) throw new FatalAiError("ai_model", `模型名「${model}」或接口地址不对，请对照服务商后台检查`, { model, status: res.status, detail: short });
     // 有的服务商不支持 response_format，去掉再试一次
     if (res.status === 400 && body.response_format && /response_format|json_object/i.test(detail)) {
       delete body.response_format;
@@ -204,12 +210,12 @@ async function callOpenAICompatible({ apiKey, model, baseUrl }, batch, withImage
  */
 export async function extractWithApi(posts, ai, { onProgress } = {}) {
   const provider = PROVIDERS.find((p) => p.id === ai.provider);
-  if (!provider) throw new Error("不认识的 AI 服务商");
+  if (!provider) throw new AppError("ai_provider", "不认识的 AI 服务商");
   const model = String(ai.model || provider.defaultModel || "").trim();
-  if (!model) throw new Error("请填写模型名");
-  if (!/^[\w.\-:/@]{1,120}$/.test(model)) throw new Error("模型名里有不支持的字符");
-  if (provider.kind === "anthropic" && !provider.models.includes(model)) throw new Error("请从列表里选择 Claude 模型");
-  const cfg = { apiKey: ai.apiKey, model, effort: ai.effort, baseUrl: provider.kind === "openai" ? await resolveBaseUrl(provider, ai.baseUrl) : undefined };
+  if (!model) throw new AppError("ai_model_empty", "请填写模型名");
+  if (!/^[\w.\-:/@]{1,120}$/.test(model)) throw new AppError("ai_model_chars", "模型名里有不支持的字符");
+  if (provider.kind === "anthropic" && !provider.models.includes(model)) throw new AppError("ai_model_claude", "请从列表里选择 Claude 模型");
+  const cfg = { apiKey: ai.apiKey, model, effort: ai.effort, lang: ai.lang, baseUrl: provider.kind === "openai" ? await resolveBaseUrl(provider, ai.baseUrl) : undefined };
   const call = provider.kind === "anthropic" ? callAnthropic : callOpenAICompatible;
 
   const useVision = Boolean(ai.vision);
@@ -251,11 +257,11 @@ export async function extractWithApi(posts, ai, { onProgress } = {}) {
       onProgress?.(done, posts.length);
     }
   }));
-  if (fatal) throw new Error(fatal.message);
-  if (batches.length && failedBatches === batches.length) throw new Error(`AI 调用全部失败：${lastError?.message ?? "未知错误"}`);
+  if (fatal) throw fatal;
+  if (batches.length && failedBatches === batches.length) throw new AppError("ai_all_failed", `AI 调用全部失败：${lastError?.message ?? "未知错误"}`, { detail: String(lastError?.message ?? "").slice(0, 200) });
   return {
     calls, flexIds, failedBatches, uncertain,
     imagePosts: withImg.length, imageFallbacks,
-    label: `${provider.label.split("（")[0]} · ${model}`,
+    provider: provider.id, model,
   };
 }

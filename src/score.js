@@ -101,7 +101,6 @@ export async function evaluate(posts, rawCalls) {
     return driftCache.get(key);
   };
 
-  const MODE_LABEL = { open: "开盘价", intraday: "盘中价", close: "收盘价" };
   const evaluated = [];
   for (const c of calls) {
     const base = {
@@ -144,19 +143,19 @@ export async function evaluate(posts, rawCalls) {
 
     // 博主口径：持有到他自己说的期限；期限内他喊了平仓或反向，就按那条帖子之后第一个能成交的价格结束
     const j = exitIndex(c.horizonDays);
-    let own = j < bars.length ? { ...calc(bars[j].close, j), exitReason: "到期" } : null;
+    let own = j < bars.length ? { ...calc(bars[j].close, j), exitReason: "expiry" } : null;
     const closer = (closers.get(c.symbol) ?? []).find((e) => e.T > c.T && (e.type === "exit" || e.type !== c.direction));
     if (closer) {
       const x = await priceAfter(series, closer.T);
       if (x && (x.idx < j || (x.idx === j && x.mode !== "close"))) {
-        own = { ...calc(x.price, x.idx), exitReason: closer.type === "exit" ? "博主平仓" : "博主转向" };
+        own = { ...calc(x.price, x.idx), exitReason: closer.type === "exit" ? "exit" : "reversal" };
       }
     }
     if (own) outcomes.own = own;
     evaluated.push({
       ...base, name: series.name, currency: series.currency,
-      entryDate: bars[i].date, entryPrice: entry.price, entryMode: MODE_LABEL[entry.mode],
-      benchmark: benchSymbol ?? "同期随机买入",
+      entryDate: bars[i].date, entryPrice: entry.price, entryMode: entry.mode,
+      benchmark: benchSymbol ?? "drift",
       status: Object.keys(outcomes).length ? "done" : "pending",
       outcomes,
     });
@@ -199,7 +198,7 @@ const RED_FLAGS = [
 ];
 
 export function detectRedFlags(posts) {
-  const flags = RED_FLAGS.map((f) => ({ id: f.id, label: f.label, count: 0, examples: [] }));
+  const flags = RED_FLAGS.map((f) => ({ id: f.id, count: 0, examples: [] }));
   let flagged = 0;
   for (const p of posts) {
     let any = false;
@@ -215,24 +214,18 @@ export function detectRedFlags(posts) {
 }
 
 export function computeScore(horizons, redFlags) {
+  // 只返回分数和等级代号，文字由页面按访客的语言显示
   const h = horizons[PRIMARY];
-  if (!h || h.n < 5) {
-    return { score: null, grade: "样本不足", verdict: `已到期可验证的观点只有 ${h?.n ?? 0} 条，不足以下结论（至少需要 5 条，20 条以上才比较可信）。`, parts: null };
-  }
-  const wins = Math.round(h.winRate * h.n);
-  const shrunkWin = (wins + PRIOR / 2) / (h.n + PRIOR);
+  const n = h?.n ?? 0;
+  if (n < 5) return { score: null, gradeKey: "insufficient", n, parts: null };
+  const wins = Math.round(h.winRate * n);
+  const shrunkWin = (wins + PRIOR / 2) / (n + PRIOR);
   const edge = h.avgExcess ?? h.avgReturn ?? 0;
-  const shrunkEdge = edge * (h.n / (h.n + PRIOR));
+  const shrunkEdge = edge * (n / (n + PRIOR));
   const winPart = (shrunkWin - 0.5) * 200;
   const edgePart = Math.max(-15, Math.min(15, shrunkEdge * 200));
   const penalty = Math.min(20, Math.round(redFlags.ratio * 200));
   const score = Math.round(Math.max(0, Math.min(100, 50 + winPart + edgePart - penalty)));
-  let grade, verdict;
-  if (score >= 70) [grade, verdict] = ["较可靠", "历史观点明显跑赢大盘，且样本量撑得住这个结论。"];
-  else if (score >= 57) [grade, verdict] = ["略强于大盘", "历史观点小幅跑赢大盘，有一定参考价值，但优势不大。"];
-  else if (score >= 45) [grade, verdict] = ["和抛硬币差不多", "历史观点和随机买卖没有明显区别，听不听都一样。"];
-  else if (score >= 30) [grade, verdict] = ["不可靠", "历史观点整体跑输大盘。"];
-  else [grade, verdict] = ["反向指标", "历史观点显著跑输大盘，或存在大量引流/承诺收益的危险信号。"];
-  if (h.n < 20) verdict += `（注意：只有 ${h.n} 条到期样本，结论不稳，分数已向 50 分收缩。）`;
-  return { score, grade, verdict, parts: { shrunkWin, winPart, edgePart, penalty, n: h.n } };
+  const gradeKey = score >= 70 ? "reliable" : score >= 57 ? "slight" : score >= 45 ? "coin" : score >= 30 ? "unreliable" : "contrarian";
+  return { score, gradeKey, n, parts: { shrunkWin, winPart, edgePart, penalty, n } };
 }

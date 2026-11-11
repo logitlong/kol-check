@@ -1,5 +1,7 @@
 // 第三方数据源 twitterapi.io（非 X 官方，价格约为官方的几十分之一）。
 // 需要环境变量 TWITTERAPI_IO_KEY。接口：GET /twitter/user/last_tweets，每页最多 20 条，按返回条数计费。
+import { AppError } from "../errors.js";
+
 const BASE = "https://api.twitterapi.io";
 // 两次请求之间的间隔：先快速请求，一旦被限流（免费账号大约 5 秒才能请求一次）就自动降到慢速。
 const FAST_MS = 400, SLOW_MS = 5500;
@@ -18,11 +20,11 @@ async function call(pathname, params, ctx) {
       await sleep(6000 * (attempt + 1)); // 免费账号限速较严，退避久一点
       continue;
     }
-    if (res.status === 401 || res.status === 403) throw new Error(`twitterapi.io 鉴权失败（${res.status}），请检查 twitterapi.io 的 key 是否填对`);
-    if (res.status === 402) throw new Error("twitterapi.io 余额不足（402），请到其后台查看 credits");
-    if (!res.ok) throw new Error(`twitterapi.io 返回 ${res.status}`);
+    if (res.status === 401 || res.status === 403) throw new AppError("fetch_auth", `twitterapi.io 鉴权失败（${res.status}），请检查 twitterapi.io 的 key 是否填对`);
+    if (res.status === 402) throw new AppError("fetch_balance", "twitterapi.io 余额不足（402），请到其后台查看 credits");
+    if (!res.ok) throw new AppError("fetch_http", `twitterapi.io 返回 ${res.status}`, { status: res.status });
     const json = await res.json();
-    if (json.status === "error") throw new Error(`twitterapi.io：${json.msg || json.message || "未知错误"}`);
+    if (json.status === "error") throw new AppError(/not found/i.test(json.msg || "") ? "account_not_found" : "fetch_api", `twitterapi.io：${json.msg || json.message || "未知错误"}`, { detail: String(json.msg || json.message || "").slice(0, 200) });
     return json;
   }
 }
@@ -40,7 +42,7 @@ function photoUrls(t) {
 export async function fetchFromTwitterApiIo(handle, { key = process.env.TWITTERAPI_IO_KEY, maxPosts = Number(process.env.X_MAX_POSTS) || 3200, onProgress } = {}) {
   const ctx = { key, delay: FAST_MS };
   const info = await call("/twitter/user/info", { userName: handle }, ctx);
-  if (info.data?.unavailable) throw new Error(`账号 @${handle} 不可用（${info.data.unavailableReason || "已冻结或不存在"}）`);
+  if (info.data?.unavailable) throw new AppError("account_unavailable", `账号 @${handle} 不可用（${info.data.unavailableReason || "已冻结或不存在"}）`);
   const posts = [];
   const seen = new Set();
   let cursor = "";

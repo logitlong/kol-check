@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -112,6 +112,8 @@
   .kol b { font-family: var(--mono); }
   .kol small { color: var(--muted); display: block; font-size: 11.5px; }
   footer { font: 11.5px var(--mono); color: var(--muted); text-align: center; margin-top: 26px; letter-spacing: .04em; }
+  .lang { padding: 5px 8px; font: 12px var(--mono); background: #070b10; color: var(--ink); border: 1px solid var(--line2); }
+  .topbar { flex-wrap: wrap; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -119,114 +121,110 @@
 <main>
   <div class="topbar">
     <div class="logo">KOL<b>//</b>CHECK<i></i></div>
-    <div class="feeds"><span>行情 YAHOO FINANCE</span><span>帖子 X</span><span>回测引擎</span></div>
+    <div class="feeds"><span data-t="top.feed1"></span><span data-t="top.feed2"></span><span data-t="top.feed3"></span></div>
+    <select id="lang" class="lang" aria-label="Language">
+      <option value="zh-CN">简体中文</option>
+      <option value="zh-TW">繁體中文</option>
+      <option value="en">English</option>
+      <option value="ja">日本語</option>
+      <option value="ko">한국어</option>
+      <option value="es">Español</option>
+      <option value="pt">Português</option>
+    </select>
   </div>
-  <h1>别听他怎么说，<em>看他喊过的单</em>。</h1>
-  <p class="sub">把财经博主过去的每一次喊单，逐条拿到真实行情里对账：什么时候说的、当时什么价、按他自己说的期限拿下来是赚是亏、有没有跑赢大盘。</p>
-  <div class="markets"><span>US 美股</span><span>JP 日股</span><span>KR 韩股</span><span>HK 港股</span><span>CRYPTO 加密货币</span></div>
+  <h1 data-th="hero.h1"></h1>
+  <p class="sub" data-t="hero.sub"></p>
+  <div class="markets"><span data-t="mk.us"></span><span data-t="mk.jp"></span><span data-t="mk.kr"></span><span data-t="mk.hk"></span><span data-t="mk.crypto"></span></div>
 
   <section class="card" id="kolsCard" hidden>
-    <h2>已经分析过的博主</h2>
+    <h2 data-t="kols.title"></h2>
     <div class="kols" id="kols"></div>
-    <div class="hint">点开直接看报告，不需要填任何 key。</div>
+    <div class="hint" data-t="kols.hint"></div>
   </section>
 
   <section class="card">
-    <h2>验证一个博主</h2>
+    <h2 data-t="run.title"></h2>
     <div class="row">
-      <input id="handle" type="text" placeholder="https://x.com/用户名 或 @用户名" autocomplete="off" autocapitalize="off" spellcheck="false">
-      <button id="go" class="go">开始验证 ▸</button>
+      <input id="handle" type="text" data-tp="run.ph" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button id="go" class="go"></button>
     </div>
     <div class="field" id="maxRow">
-      <label>分析多少条帖子 <button type="button" class="info" id="costBtn" aria-label="查看大概消耗多少积分" aria-expanded="false">i</button></label>
+      <label><span data-t="limit.label"></span> <button type="button" class="info" id="costBtn" data-ta="limit.info" aria-expanded="false">i</button></label>
       <div class="row">
-        <button type="button" class="seg" data-mode="all" aria-pressed="true">全部帖子</button>
-        <button type="button" class="seg" data-mode="custom" aria-pressed="false">自定义条数</button>
-        <input id="maxCustom" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="例如 500" autocomplete="off" hidden>
+        <button type="button" class="seg" data-mode="all" aria-pressed="true" data-t="limit.all"></button>
+        <button type="button" class="seg" data-mode="custom" aria-pressed="false" data-t="limit.custom"></button>
+        <input id="maxCustom" type="text" inputmode="numeric" pattern="[0-9]*" data-tp="limit.ph" autocomplete="off" hidden>
       </div>
       <div class="notice" id="costTip" hidden></div>
     </div>
-    <div class="hint">贴上博主的 X 主页链接，后台自动读取他的历史帖子并回溯行情。</div>
+    <div class="hint" data-t="run.hint"></div>
     <div id="keyStatus" class="hint"></div>
     <div id="error" class="notice error" hidden></div>
     <div id="progress" hidden>
-      <div class="notice" id="stage">准备中…</div>
+      <div class="notice" id="stage"></div>
       <div class="bar" id="bar"><i></i></div>
-      <div class="hint">分析需要几分钟到十几分钟。可以切到别的 App，回来再打开这个页面会自动接着显示。</div>
+      <div class="hint" data-t="prog.hint"></div>
     </div>
   </section>
 
   <section class="card">
     <details id="keysBox">
-      <summary>我的 Key <span id="keysBadge" class="chip"></span></summary>
-      <p>这个网站不提供免费的抓帖和 AI，需要你填自己的两个 key。key <b>只保存在你这台设备的浏览器里</b>，提交分析时随请求发到服务器使用，服务器不保存、不记录。</p>
+      <summary><span data-t="keys.title"></span> <span id="keysBadge" class="chip"></span></summary>
+      <p data-th="keys.intro"></p>
 
       <div class="field">
-        <label for="fetchKey">① 抓帖 key（twitterapi.io）</label>
-        <input id="fetchKey" type="password" placeholder="粘贴 twitterapi.io 的 API Key" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <label for="fetchKey" data-t="keys.fetch"></label>
+        <input id="fetchKey" type="password" data-tp="keys.fetchPh" autocomplete="off" autocapitalize="off" spellcheck="false">
       </div>
-
       <div class="field">
-        <label for="provider">② AI 服务商</label>
+        <label for="provider" data-t="keys.provider"></label>
         <select id="provider"></select>
       </div>
       <div class="field">
-        <label for="aiKey">AI 的 API Key <span id="aiKeyHint"></span></label>
-        <input id="aiKey" type="password" placeholder="粘贴 API Key" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <label for="aiKey"><span data-t="keys.aiKey"></span> <span id="aiKeyHint"></span></label>
+        <input id="aiKey" type="password" data-tp="keys.aiKeyPh" autocomplete="off" autocapitalize="off" spellcheck="false">
         <div class="hint" id="aiKeyLink"></div>
       </div>
       <div class="field" id="baseUrlRow" hidden>
-        <label for="baseUrl">接口地址（Base URL）</label>
+        <label for="baseUrl" data-t="keys.baseUrl"></label>
         <input id="baseUrl" type="url" placeholder="https://api.example.com/v1" autocomplete="off" autocapitalize="off" spellcheck="false">
       </div>
       <div class="field">
-        <label for="aiModelText">模型</label>
+        <label for="aiModelText" data-t="keys.model"></label>
         <select id="aiModelSel" hidden></select>
-        <input id="aiModelText" type="text" placeholder="模型名" autocomplete="off" autocapitalize="off" spellcheck="false">
-        <div class="hint">各家的模型名经常更新，这里预填的只是示例，以服务商后台显示的为准。</div>
+        <input id="aiModelText" type="text" data-tp="keys.modelPh" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="hint" data-t="keys.modelHint"></div>
       </div>
       <div class="field">
-        <label><input type="checkbox" id="vision"> 让 AI 看帖子里的图片（持仓截图、K 线标注）。模型必须支持图片，否则会自动退回只看文字；看图更费钱。</label>
+        <label><input type="checkbox" id="vision"> <span data-t="keys.vision"></span></label>
       </div>
       <div class="row" style="margin-top:14px">
-        <button class="ghost" id="saveKeys">保存到这台设备</button>
-        <button class="ghost" id="clearKeys">清除</button>
+        <button class="ghost" id="saveKeys" data-t="keys.save"></button>
+        <button class="ghost" id="clearKeys" data-t="keys.clear"></button>
         <span id="keysSaved" class="hint" style="margin:0"></span>
       </div>
-
     </details>
   </section>
 
   <section class="card">
     <details id="guide">
-      <summary>第一次用？两个 Key 怎么申请</summary>
-
-      <h3>① 抓帖 key：twitterapi.io（用来读取博主的帖子）</h3>
-      <ol>
-        <li>打开 <a href="https://twitterapi.io" target="_blank" rel="noopener noreferrer">twitterapi.io</a>，注册并登录（可以用 Google 账号）。</li>
-        <li>登录后进入后台（Dashboard），页面上会显示你的 <b>API Key</b>，点复制。</li>
-        <li>回到本页，展开「我的 Key」，粘贴到第 ① 栏，点「保存到这台设备」。</li>
-      </ol>
-      <p>费用：新注册会送约 <b>1 美元的额度（10 万积分，10 万积分 = 1 美元）</b>，不用绑卡，够分析很多个博主，一般用不完。用完以后按量充值，按它公布的价格大约每 1000 条帖子 0.15 美元（约 1.5 万积分）。它是第三方服务，不是 X 官方的；实际扣多少积分以它后台显示的为准。免费账号有请求频率限制，抓帖会慢一些。</p>
-
-      <h3>② AI 的 key（用来读懂每条帖子在说什么）</h3>
-      <p>任选一家你已经有账号的即可。步骤都一样：打开后台 → 创建 API Key → 复制 → 回到本页「我的 Key」里选对服务商并粘贴。大多数服务商需要先充值一点余额，key 才能用。</p>
+      <summary data-t="guide.title"></summary>
+      <h3 data-t="guide.h1"></h3>
+      <ol><li data-th="guide.s1a"></li><li data-th="guide.s1b"></li><li data-t="guide.s1c"></li></ol>
+      <p data-th="guide.fee"></p>
+      <h3 data-t="guide.h2"></h3>
+      <p data-t="guide.p2"></p>
       <ul id="providerGuide"></ul>
-      <p>怎么选：想要最准、能看图，用 Claude、GPT 或 Gemini；想便宜、在国内好充值，用 DeepSeek（默认的 deepseek-flash 也能看图）、通义千问或豆包（这两家要看图需换成带视觉能力的模型）。注意：ChatGPT、Claude、豆包这些 App 的会员<b>不等于</b> API 额度，API 需要在各自的开发者后台单独开通和充值。</p>
-      <p>AI 的花费取决于帖子数量和你选的模型，500 条帖子用便宜的模型通常只要几分钱到几毛钱人民币，用最强的模型可能要几块到十几块。</p>
-
-      <h3>③ 开始用</h3>
-      <ol>
-        <li>在上面「验证一个博主」里贴上博主的 X 主页链接。</li>
-        <li>选择分析多少条帖子，点「开始验证」。</li>
-        <li>等进度条走完，就能看到评分和逐条对账。</li>
-      </ol>
+      <p data-th="guide.choose"></p>
+      <p data-t="guide.cost"></p>
+      <h3 data-t="guide.h3"></h3>
+      <ol><li data-t="guide.u1"></li><li data-t="guide.u2"></li><li data-t="guide.u3"></li></ol>
     </details>
   </section>
 
   <div id="result" hidden>
     <section class="card hero">
-      <svg class="ring" viewBox="0 0 120 120" role="img" aria-label="可信度评分">
+      <svg class="ring" viewBox="0 0 120 120" role="img" aria-label="Score">
         <circle cx="60" cy="60" r="50" fill="none" stroke="var(--line2)" stroke-width="8" stroke-dasharray="2 4"/>
         <circle id="arc" cx="60" cy="60" r="50" fill="none" stroke-width="8" stroke-linecap="butt" transform="rotate(-90 60 60)"/>
         <text id="scoreText" x="60" y="66" text-anchor="middle" font-size="34"></text>
@@ -238,48 +236,45 @@
         <div class="meta" id="meta"></div>
       </div>
     </section>
-
     <div class="tiles" id="tiles"></div>
-
     <section class="card">
-      <h2>不同持有期的表现</h2>
+      <h2 data-t="hz.title"></h2>
       <div class="scroll"><table id="horizons"></table></div>
-      <div class="hint">「按帖子自己的期限」= 他说今晚就看 1 天，说这周就看 5 天，说长期才看几个月；期限内他自己喊了平仓或反过来说，就算到那一刻为止。下面几行固定持有期只是参考。<br>「方向对」= 喊涨后真涨了 / 喊跌后真跌了。「跑赢大盘」= 扣掉同期大盘涨跌后仍然赚钱——牛市里闭眼喊多也能"方向对"，所以评分主要看后者。</div>
+      <div class="hint" data-th="hz.hint"></div>
     </section>
-
     <section class="card">
-      <h2>危险信号</h2>
+      <h2 data-t="fl.title"></h2>
       <div id="flags"></div>
     </section>
-
     <section class="card">
-      <h2>按标的统计</h2>
+      <h2 data-t="sym.title"></h2>
       <div class="scroll"><table id="symbols"></table></div>
     </section>
-
     <section class="card">
-      <h2>逐条对账</h2>
+      <h2 data-t="calls.title"></h2>
       <div class="scroll"><table id="calls"></table></div>
     </section>
   </div>
 
   <section class="card">
     <details>
-      <summary>评分是怎么算的？有哪些局限？</summary>
+      <summary data-t="method.title"></summary>
       <ul>
-        <li><b>提取观点</b>：AI 逐条读帖子，只保留"对具体标的、有明确方向"的看法；新闻转述、复盘、提问不算。同一标的同一方向短期内反复喊只算一次。</li>
-        <li><b>进场价</b>：发帖之后第一个能成交的价格——发帖时没开盘，用下一次开盘价；盘中发帖，用发帖后的盘中价（两年以前的帖子没有盘中数据，用当天收盘价）。这样不会把发帖前已经发生的涨跌算成博主的功劳，也不会错过他说的"今晚"。进场当天算第 1 个交易日。</li>
-        <li><b>期限</b>：每条观点按帖子自己的意思定期限（短线几天、中线几周、长线几个月），没明说的由 AI 按措辞推断并标注「推断」。期限内博主自己说了清仓、止盈或反向观点，就按那条帖子之后第一个能成交的价格结束。</li>
-        <li><b>结果</b>：按上面的期限持有后的涨跌（另附固定 1 / 5 / 20 / 60 个交易日作参考），并减去同期大盘（美股对标普 500，日股对日经 225，韩股对 KOSPI，山寨币对 BTC；BTC 和指数本身对"同期随便哪天买入"的平均收益）。</li>
-        <li><b>分数</b>：50 分 = 抛硬币。以"按帖子自己的期限"的跑赢大盘比例为主，加上平均超额收益（±15 分封顶），再扣危险信号（最多 20 分）。样本越少，分数越向 50 收缩。</li>
-        <li><b>局限</b>：① 删掉的帖子看不到，博主事后删除错误预测会让分数虚高；② 没有考虑仓位和止损；③ 不同 AI 模型对同一条帖子的判断可能不同，换模型分数会有出入；④ 过去准不代表未来准。</li>
-        <li><b>声明</b>：分数是算法根据公开帖子和公开行情自动估算的，不是对任何人的事实认定，也不构成投资建议。每条观点都附了原帖链接，请自行核对。</li>
+        <li data-th="method.m1"></li><li data-th="method.m2"></li><li data-th="method.m3"></li><li data-th="method.m4"></li>
+        <li data-th="method.m5"></li><li data-th="method.m6"></li><li data-th="method.m7"></li>
       </ul>
     </details>
   </section>
-  <footer>KOL//CHECK · 算法估算，非投资建议 · 每条观点均附原帖链接，请自行核对</footer>
+  <footer data-t="footer"></footer>
 </main>
 
+<script src="/i18n/zh-CN.js"></script>
+<script src="/i18n/zh-TW.js"></script>
+<script src="/i18n/en.js"></script>
+<script src="/i18n/ja.js"></script>
+<script src="/i18n/ko.js"></script>
+<script src="/i18n/es.js"></script>
+<script src="/i18n/pt.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -292,27 +287,82 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
   del(k) { try { localStorage.removeItem(k); } catch {} },
 };
-const source = "x";
-let caps = { providers: [], models: [], efforts: [] }, pollTimer = null;
+
+// —— 多语言 ——
+const DICT = window.I18N || {};
+const LANGS = ["zh-CN", "zh-TW", "en", "ja", "ko", "es", "pt"].filter((l) => DICT[l]);
+for (const o of [...document.querySelectorAll("#lang option")]) if (!DICT[o.value]) o.remove();
+function detectLang() {
+  const saved = store.get("kol.lang");
+  if (LANGS.includes(saved)) return saved;
+  for (const raw of navigator.languages || [navigator.language || ""]) {
+    const l = String(raw).toLowerCase();
+    if (/^zh-(tw|hk|mo)|^zh-hant/.test(l)) return "zh-TW";
+    if (l.startsWith("zh")) return "zh-CN";
+    const hit = LANGS.find((x) => l.startsWith(x.toLowerCase()));
+    if (hit) return hit;
+  }
+  return "en";
+}
+let lang = detectLang();
+// 词条里的 {name} 会被替换；参数一律先转义，词条本身是可信的静态内容
+function t(key, params) {
+  let s = DICT[lang]?.[key] ?? DICT.en?.[key] ?? DICT["zh-CN"]?.[key] ?? key;
+  if (params) for (const [k, v] of Object.entries(params)) s = s.split(`{${k}}`).join(esc(v));
+  return s;
+}
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.title = t("meta.title").replace(/&amp;/g, "&");
+  document.querySelectorAll("[data-t]").forEach((el) => (el.innerHTML = t(el.dataset.t)));
+  document.querySelectorAll("[data-th]").forEach((el) => (el.innerHTML = t(el.dataset.th)));
+  document.querySelectorAll("[data-tp]").forEach((el) => (el.placeholder = t(el.dataset.tp).replace(/&amp;/g, "&")));
+  document.querySelectorAll("[data-ta]").forEach((el) => el.setAttribute("aria-label", t(el.dataset.ta)));
+  $("lang").value = lang;
+  $("go").textContent = $("go").disabled ? t("run.busy") : t("run.go");
+  if (caps.providers.length) renderProviders();
+  refreshStatus();
+  updateCostTip();
+  if (lastStage) showStage(lastStage);
+  if (lastError) showError(lastError);
+  if (lastReport) render(lastReport, true);
+  renderKols();
+}
+
+let caps = { providers: [] }, pollTimer = null, lastReport = null, lastStage = null, lastError = null, kolList = [];
+const provName = (id) => t("prov." + id);
 
 // —— Key 面板 ——
 const provider = () => caps.providers.find((p) => p.id === $("provider").value) || caps.providers[0];
-const aiModel = () => (provider()?.kind === "anthropic" ? $("aiModelSel").value : $("aiModelText").value.trim());
+const aiModel = () => (provider()?.kind === "anthropic" ? $("aiModelSel").value : $("aiModelText").value.trim() || provider()?.defaultModel || "");
 
+function renderProviders() {
+  const cur = $("provider").value;
+  $("provider").innerHTML = caps.providers.map((p) => `<option value="${esc(p.id)}">${provName(p.id)}</option>`).join("");
+  if (cur) $("provider").value = cur;
+  $("providerGuide").innerHTML = caps.providers.filter((p) => p.keyUrl).map((p) => {
+    const hint = DICT[lang]?.["provHint." + p.id] ?? DICT.en?.["provHint." + p.id] ?? "";
+    return `<li><b>${provName(p.id)}</b> — <a href="${esc(p.keyUrl)}" target="_blank" rel="noopener noreferrer">${t("guide.openKey")}</a>${hint ? ` · ${hint}` : ""}${p.defaultModel ? ` · ${t("guide.example")} <code>${esc(p.defaultModel)}</code>` : ""}${p.vision ? ` · ${t("guide.sees")}` : ""}</li>`;
+  }).join("");
+  onProviderChange(true);
+}
 function onProviderChange(keepModel) {
   const p = provider();
   if (!p) return;
   const isClaude = p.kind === "anthropic";
   $("aiModelSel").hidden = !isClaude;
   $("aiModelText").hidden = isClaude;
-  if (isClaude) $("aiModelSel").innerHTML = p.models.map((m) => `<option value="${esc(m)}"${m === p.defaultModel ? " selected" : ""}>${esc(m)}</option>`).join("");
-  else if (!keepModel) $("aiModelText").value = p.defaultModel || "";
+  if (isClaude) {
+    const cur = $("aiModelSel").value;
+    $("aiModelSel").innerHTML = p.models.map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
+    $("aiModelSel").value = keepModel && p.models.includes(cur) ? cur : p.defaultModel;
+  } else if (!keepModel) $("aiModelText").value = p.defaultModel || "";
   if (!keepModel) $("vision").checked = Boolean(p.vision);
   $("baseUrlRow").hidden = p.id !== "custom";
-  $("aiKeyHint").textContent = p.keyHint ? `（${p.keyHint}）` : "";
-  $("aiKeyLink").innerHTML = p.keyUrl ? `去哪拿：<a href="${esc(p.keyUrl)}" target="_blank" rel="noopener noreferrer">${esc(p.label)} 的 Key 页面</a>` : "";
+  const hint = DICT[lang]?.["provHint." + p.id] ?? DICT.en?.["provHint." + p.id] ?? "";
+  $("aiKeyHint").innerHTML = hint ? `(${hint})` : "";
+  $("aiKeyLink").innerHTML = p.keyUrl ? `<a href="${esc(p.keyUrl)}" target="_blank" rel="noopener noreferrer">${t("keys.where", { name: "" })}${provName(p.id)}</a>` : "";
 }
-
 function loadKeys() {
   const k = store.get("kol.keys") || {};
   $("fetchKey").value = k.fetchKey || "";
@@ -330,41 +380,37 @@ function refreshStatus() {
   const k = currentKeys();
   const hasFetch = Boolean(k.fetchKey) || caps.serverFetchKey;
   const hasAi = Boolean(k.aiKey) || caps.localClaude || caps.serverAiKey;
-  $("keysBadge").textContent = hasFetch && hasAi ? "已就绪" : "还没填完";
-  const parts = [];
-  parts.push(hasFetch ? `<span class="ok">抓帖 key ✓</span>` : `<span class="missing">还没填抓帖 key</span>`);
-  parts.push(k.aiKey ? `<span class="ok">AI：${esc(provider()?.label.split("（")[0])} ✓</span>`
-    : caps.localClaude || caps.serverAiKey ? `<span class="ok">AI ✓</span>` : `<span class="missing">还没填 AI key</span>`);
-  const need = !hasFetch || !hasAi;
-  $("keyStatus").innerHTML = parts.join("　") + (need ? `　<a href="#" id="openKeys">去填写</a>` : "");
+  $("keysBadge").innerHTML = hasFetch && hasAi ? t("keys.ready") : t("keys.notReady");
+  const parts = [
+    hasFetch ? `<span class="ok">${t("st.fetchOk")}</span>` : `<span class="missing">${t("st.fetchMissing")}</span>`,
+    k.aiKey ? `<span class="ok">${t("st.aiOk", { name: "" })}${provName(k.provider)} ✓</span>`
+      : hasAi ? `<span class="ok">${t("st.aiOkPlain")}</span>` : `<span class="missing">${t("st.aiMissing")}</span>`,
+  ];
+  $("keyStatus").innerHTML = parts.join("　") + (!hasFetch || !hasAi ? `　<a href="#" id="openKeys">${t("st.fill")}</a>` : "");
   $("openKeys")?.addEventListener("click", (e) => { e.preventDefault(); $("keysBox").open = true; $("keysBox").scrollIntoView({ behavior: "smooth" }); });
 }
-
 $("provider").addEventListener("change", () => { onProviderChange(false); refreshStatus(); });
 ["fetchKey", "aiKey"].forEach((id) => $(id).addEventListener("input", refreshStatus));
-$("saveKeys").addEventListener("click", () => {
-  $("keysSaved").textContent = store.set("kol.keys", currentKeys()) ? "已保存在这台设备的浏览器里" : "这个浏览器不允许保存（可能是无痕模式），本次仍可使用";
-  refreshStatus();
-});
-$("clearKeys").addEventListener("click", () => { store.del("kol.keys"); loadKeys(); $("keysSaved").textContent = "已清除"; refreshStatus(); });
+$("saveKeys").addEventListener("click", () => { $("keysSaved").innerHTML = store.set("kol.keys", currentKeys()) ? t("keys.saved") : t("keys.saveFail"); refreshStatus(); });
+$("clearKeys").addEventListener("click", () => { store.del("kol.keys"); loadKeys(); $("keysSaved").innerHTML = t("keys.cleared"); refreshStatus(); });
 $("handle").addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
 $("go").addEventListener("click", run);
+$("lang").addEventListener("change", () => { lang = $("lang").value; store.set("kol.lang", lang); applyLang(); });
 
-// —— 分析多少条 + 积分估算 ——
-const ALL_CAP = 10000, CREDITS_PER_POST = 15; // twitterapi.io 公布价约 $0.15 / 1000 条，10 万积分 = 1 美元
+// —— 分析多少条 + 积分估算（twitterapi.io 官方计费：每条返回的帖子 15 积分，10 万积分 = 1 美元）——
+const ALL_CAP = 10000, CREDITS_PER_POST = 15;
 let limitMode = "all";
 const customCount = () => Math.max(20, Math.min(ALL_CAP, parseInt($("maxCustom").value, 10) || 0));
 const postLimit = () => (limitMode === "all" ? ALL_CAP : customCount());
-const fmtCredits = (n) => (n >= 10000 ? (n / 10000).toFixed(n % 10000 ? 1 : 0) + " 万" : n.toLocaleString());
 function updateCostTip() {
   const typed = parseInt($("maxCustom").value, 10) || 0;
   const n = customCount();
   $("costTip").innerHTML = (limitMode === "all"
-    ? `抓取他的全部帖子（不含纯转发，最多 ${ALL_CAP.toLocaleString()} 条）。消耗取决于他发了多少：<b>每 1000 条约 1.5 万积分</b>，比如 3000 条约 4.5 万积分。新账号送 10 万积分。`
+    ? t("tip.all", { max: ALL_CAP.toLocaleString() })
     : typed
-      ? `抓取最近 <b>${n.toLocaleString()}</b> 条，大约消耗 <b>${fmtCredits(n * CREDITS_PER_POST)} 积分</b>（约 $${((n * CREDITS_PER_POST) / 100000).toFixed(2)}）。新账号送 10 万积分。`
-      : `输入条数后这里会显示大概消耗多少积分。每条约 ${CREDITS_PER_POST} 积分，可填 20 ~ ${ALL_CAP.toLocaleString()}。`)
-    + `<br><span class="dim">这是抓帖（twitterapi.io）的估算，实际以它后台为准；AI 的费用另算，帖子越多越贵。</span>`;
+      ? t("tip.custom", { n: n.toLocaleString(), credits: (n * CREDITS_PER_POST).toLocaleString(), usd: ((n * CREDITS_PER_POST) / 100000).toFixed(2) })
+      : t("tip.empty", { per: CREDITS_PER_POST, max: ALL_CAP.toLocaleString() }))
+    + `<br><span class="dim">${t("tip.note")}</span>`;
 }
 document.querySelectorAll(".seg").forEach((b) => b.addEventListener("click", () => {
   limitMode = b.dataset.mode;
@@ -382,28 +428,37 @@ $("costBtn").addEventListener("click", () => {
 });
 
 // —— 提交 + 轮询进度 ——
-function showError(msg) { $("error").textContent = msg; $("error").hidden = false; }
-function setBusy(b) { $("go").disabled = b; $("go").textContent = b ? "分析中…" : "开始验证 ▸"; $("progress").hidden = !b; }
+// 错误和进度都是 {code, params}，按当前语言显示；没有对应词条时退回服务器给的原文
+function showError(e) {
+  lastError = e;
+  const key = "err." + e.code;
+  const known = e.code && (DICT[lang]?.[key] || DICT.en?.[key]);
+  $("error").innerHTML = known ? t(key, e.params || {}) + (e.params?.detail ? ` <span class="dim">(${esc(e.params.detail)})</span>` : "") : esc(e.message || t("err.server"));
+  $("error").hidden = false;
+}
+function clearError() { lastError = null; $("error").hidden = true; }
+function showStage(s) { lastStage = s; $("stage").innerHTML = t("stage." + s.code, s.params || {}); }
+function setBusy(b) { $("go").disabled = b; $("go").textContent = b ? t("run.busy") : t("run.go"); $("progress").hidden = !b; if (!b) lastStage = null; }
 
 async function run() {
-  $("error").hidden = true;
-  if (limitMode === "custom" && !(parseInt($("maxCustom").value, 10) >= 20)) return showError("请输入要分析的帖子条数（至少 20）");
+  clearError();
+  if (limitMode === "custom" && !(parseInt($("maxCustom").value, 10) >= 20)) return showError({ code: "need_count" });
   const k = currentKeys();
-  const body = { source, input: $("handle").value, maxPosts: postLimit() };
+  const body = { source: "x", input: $("handle").value, maxPosts: postLimit(), lang };
   if (k.fetchKey) body.fetchKey = k.fetchKey;
   if (k.aiKey) body.ai = { provider: k.provider, apiKey: k.aiKey, model: k.model, baseUrl: k.baseUrl, vision: k.vision };
   setBusy(true);
-  $("stage").textContent = "正在提交…";
+  showStage({ code: "submit" });
   $("bar").className = "bar indet";
   try {
     const res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "提交失败");
+    if (!res.ok) { setBusy(false); return showError({ code: data.code, params: data.params, message: data.error }); }
     store.set("kol.job", data.jobId);
     poll(data.jobId);
-  } catch (e) {
+  } catch {
     setBusy(false);
-    showError(e.message);
+    showError({ code: "network" });
   }
 }
 
@@ -414,15 +469,14 @@ function poll(jobId) {
     try {
       const res = await fetch(`/api/jobs/${jobId}`);
       const j = await res.json();
-      if (res.status === 404) throw new Error(j.error);
+      if (res.status === 404) { store.del("kol.job"); setBusy(false); return showError({ code: j.code || "job_gone", message: j.error }); }
       if (j.status === "done") { store.del("kol.job"); setBusy(false); render(j.report); loadReports(); return; }
-      if (j.status === "error") { store.del("kol.job"); setBusy(false); showError(j.error); return; }
-      $("stage").textContent = j.stage || "处理中…";
+      if (j.status === "error") { store.del("kol.job"); setBusy(false); return showError({ code: j.code, params: j.params, message: j.error }); }
+      showStage({ code: j.stage || "working", params: j.stageParams });
       const hasPct = j.total > 0 && j.done != null;
       $("bar").className = hasPct ? "bar" : "bar indet";
       $("bar").firstElementChild.style.width = hasPct ? Math.min(100, (j.done / j.total) * 100) + "%" : "";
-    } catch (e) {
-      if (/不存在|过期/.test(e.message)) { store.del("kol.job"); setBusy(false); showError(e.message); return; }
+    } catch {
       // 网络抖动（手机切后台很常见）：不放弃，继续等
     }
     pollTimer = setTimeout(tick, 2500);
@@ -432,89 +486,100 @@ function poll(jobId) {
 document.addEventListener("visibilitychange", () => { const id = store.get("kol.job"); if (!document.hidden && id) poll(id); });
 
 // —— 已分析的博主 ——
+function renderKols() {
+  $("kolsCard").hidden = !kolList.length;
+  $("kols").innerHTML = kolList.map((r) => {
+    const c = r.score == null ? "dim" : r.score >= 57 ? "pos" : r.score >= 45 ? "" : "neg";
+    return `<button class="kol" data-h="${esc(r.handle)}"><span class="s ${c}">${r.score ?? "?"}</span><span><b>@${esc(r.handle)}</b><small>${esc(r.name || "")} · ${t("grade." + (r.gradeKey || "insufficient"))}</small><small>${t("kols.posts", { n: r.posts ?? 0 })} · ${esc(String(r.generatedAt || "").slice(0, 10))}</small></span></button>`;
+  }).join("");
+  document.querySelectorAll(".kol").forEach((b) => b.addEventListener("click", () => openReport(b.dataset.h)));
+}
 async function loadReports() {
-  try {
-    const list = await (await fetch("/api/reports")).json();
-    $("kolsCard").hidden = !list.length;
-    $("kols").innerHTML = list.map((r) => {
-      const c = r.score == null ? "dim" : r.score >= 57 ? "pos" : r.score >= 45 ? "" : "neg";
-      return `<button class="kol" data-h="${esc(r.handle)}"><span class="s ${c}">${r.score ?? "?"}</span><span><b>@${esc(r.handle)}</b><small>${esc(r.name || "")} · ${esc(r.grade || "")}</small><small>${r.posts ?? 0} 条帖子 · ${String(r.generatedAt || "").slice(0, 10)}</small></span></button>`;
-    }).join("");
-    document.querySelectorAll(".kol").forEach((b) => b.addEventListener("click", () => openReport(b.dataset.h)));
-  } catch {}
+  try { kolList = await (await fetch("/api/reports")).json(); renderKols(); } catch {}
 }
 async function openReport(handle) {
+  clearError();
   try {
     const res = await fetch(`/api/reports/${encodeURIComponent(handle)}`);
     const r = await res.json();
-    if (!res.ok) throw new Error(r.error);
+    if (!res.ok) return showError({ code: r.code, message: r.error });
     render(r);
-  } catch (e) { showError(e.message); }
+  } catch { showError({ code: "network" }); }
 }
 
-// —— 报告 ——
-function render(r) {
-  const P = r.primaryHorizon, h = r.horizons[P], s = r.rating.score;
-  const hLabel = (k) => (k === "own" ? "按帖子自己的期限" : `固定 ${k} 个交易日`);
+// —— 报告（只存代号和数字，文字按当前语言拼）——
+function extractorText(x) {
+  if (!x || typeof x !== "object") return "";
+  let s = x.kind === "rules" ? t("ext.rules") : `${x.provider ? provName(x.provider) : "AI"}${x.model ? " · " + esc(x.model) : ""}`;
+  if (x.imagePosts) s += t("ext.img", { n: x.imagePosts });
+  if (x.imageFallbacks) s += t("ext.imgFail", { n: x.imageFallbacks });
+  if (x.uncertain) s += t("ext.uncertain", { n: x.uncertain });
+  if (x.failedBatches) s += t("ext.failed", { n: x.failedBatches });
+  return s;
+}
+function render(r, keepScroll) {
+  lastReport = r;
+  const P = r.primaryHorizon, h = r.horizons[P], s = r.rating.score, g = r.rating.gradeKey || "insufficient", n = r.rating.n ?? h.n ?? 0;
+  const hLabel = (k) => (k === "own" ? t("hz.own") : t("hz.fixed", { k }));
   const color = s == null ? "var(--muted)" : s >= 57 ? "var(--good)" : s >= 45 ? "var(--warn)" : "var(--bad)";
   const C = 2 * Math.PI * 50;
   $("arc").setAttribute("stroke", color);
   $("arc").setAttribute("stroke-dasharray", `${((s ?? 0) / 100) * C} ${C}`);
   $("scoreText").textContent = s ?? "?";
-  $("grade").textContent = `@${r.profile.handle} · ${r.rating.grade}`;
+  $("grade").innerHTML = `@${esc(r.profile.handle)} · ${t("grade." + g)}`;
   $("grade").style.color = color;
-  $("verdict").textContent = r.rating.verdict;
-  $("meta").innerHTML = `${r.profile.name && r.profile.name !== r.profile.handle ? esc(r.profile.name) + " ｜ " : ""}数据来源：${esc(r.source)} ｜ 观点提取：${esc(r.extractor)}<br>帖子 ${r.posts.total} 条（${r.posts.from} ~ ${r.posts.to}）` +
-    (r.callStats.duplicatesMerged ? ` ｜ 合并重复喊单 ${r.callStats.duplicatesMerged} 条` : "") +
-    (r.callStats.exitSignals ? ` ｜ 识别到平仓表态 ${r.callStats.exitSignals} 条` : "") +
-    ` ｜ 生成于 ${String(r.generatedAt).slice(0, 10)}`;
+  $("verdict").innerHTML = t("verdict." + g, { n }) + (s != null && n < 20 ? " " + t("verdict.lowSample", { n }) : "");
+  $("meta").innerHTML = `${r.profile.name && r.profile.name !== r.profile.handle ? esc(r.profile.name) + " ｜ " : ""}${t("meta.source")} ${t("src." + r.source)} ｜ ${t("meta.extract")} ${extractorText(r.extractor)}<br>${t("meta.posts", { n: r.posts.total, from: r.posts.from, to: r.posts.to })}` +
+    (r.callStats.duplicatesMerged ? ` ｜ ${t("meta.dup", { n: r.callStats.duplicatesMerged })}` : "") +
+    (r.callStats.exitSignals ? ` ｜ ${t("meta.exit", { n: r.callStats.exitSignals })}` : "") +
+    ` ｜ ${t("meta.gen", { d: String(r.generatedAt).slice(0, 10) })}`;
 
   $("tiles").innerHTML = [
-    [r.callStats.total, "可验证的观点"],
-    [r.callStats.total - (h.n ?? 0), "尚未到期 / 无行情"],
-    [rate(h.hitRate), "方向对的比例"],
-    [rate(h.winRate), "跑赢大盘比例"],
-    [pct(h.avgExcess), "平均超额收益"],
+    [r.callStats.total, t("tile.calls")],
+    [r.callStats.total - (h.n ?? 0), t("tile.pending")],
+    [rate(h.hitRate), t("tile.hit")],
+    [rate(h.winRate), t("tile.win")],
+    [pct(h.avgExcess), t("tile.excess")],
   ].map(([v, l]) => `<div class="tile"><b>${v}</b><span>${l}</span></div>`).join("");
 
-  $("horizons").innerHTML = `<tr><th>持有期</th><th class="num">样本</th><th class="num">方向对</th><th class="num">跑赢大盘</th><th class="num">平均收益</th><th class="num">中位收益</th><th class="num">平均超额</th></tr>` +
-    [P, ...r.horizonList].map((k) => { const x = r.horizons[k]; return `<tr><td>${hLabel(k)}${k === P ? " <span class='chip'>评分口径</span>" : ""}</td><td class="num">${x.n}</td><td class="num">${rate(x.hitRate)}</td><td class="num">${rate(x.winRate)}</td><td class="num ${cls(x.avgReturn)}">${pct(x.avgReturn)}</td><td class="num ${cls(x.medianReturn)}">${pct(x.medianReturn)}</td><td class="num ${cls(x.avgExcess)}">${pct(x.avgExcess)}</td></tr>`; }).join("");
+  $("horizons").innerHTML = `<tr><th>${t("hz.c.period")}</th><th class="num">${t("hz.c.n")}</th><th class="num">${t("hz.c.hit")}</th><th class="num">${t("hz.c.win")}</th><th class="num">${t("hz.c.avg")}</th><th class="num">${t("hz.c.med")}</th><th class="num">${t("hz.c.excess")}</th></tr>` +
+    [P, ...r.horizonList].map((k) => { const x = r.horizons[k]; return `<tr><td>${hLabel(k)}${k === P ? ` <span class='chip'>${t("hz.basis")}</span>` : ""}</td><td class="num">${x.n}</td><td class="num">${rate(x.hitRate)}</td><td class="num">${rate(x.winRate)}</td><td class="num ${cls(x.avgReturn)}">${pct(x.avgReturn)}</td><td class="num ${cls(x.medianReturn)}">${pct(x.medianReturn)}</td><td class="num ${cls(x.avgExcess)}">${pct(x.avgExcess)}</td></tr>`; }).join("");
 
   $("flags").innerHTML = r.redFlags.flags.length
-    ? `<p>${r.posts.total} 条帖子里有 ${r.redFlags.flaggedPosts} 条（${rate(r.redFlags.ratio)}）命中引流 / 承诺收益 / 返佣话术，已在评分中扣 ${r.rating.parts?.penalty ?? 0} 分：</p>` +
-      r.redFlags.flags.map((f) => `<div class="flag"><b class="neg">${esc(f.label)}</b> × ${f.count}${f.examples.map((e) => `<q>${esc(e.date)}　${esc(e.text)}</q>`).join("")}</div>`).join("")
-    : `<p class="dim">没有发现引流、承诺收益、返佣链接这类典型话术。</p>`;
+    ? `<p>${t("fl.summary", { total: r.posts.total, n: r.redFlags.flaggedPosts, pct: rate(r.redFlags.ratio), pen: r.rating.parts?.penalty ?? 0 })}</p>` +
+      r.redFlags.flags.map((f) => `<div class="flag"><b class="neg">${t("fl." + f.id)}</b> × ${f.count}${f.examples.map((e) => `<q>${esc(e.date)}　${esc(e.text) || t("calls.imageOnly")}</q>`).join("")}</div>`).join("")
+    : `<p class="dim">${t("fl.none")}</p>`;
 
-  $("symbols").innerHTML = `<tr><th>标的</th><th class="num">喊单次数</th><th class="num">看涨 / 看跌</th><th class="num">跑赢大盘</th><th class="num">平均收益</th></tr>` +
+  $("symbols").innerHTML = `<tr><th>${t("sym.c.symbol")}</th><th class="num">${t("sym.c.calls")}</th><th class="num">${t("sym.c.dir")}</th><th class="num">${t("hz.c.win")}</th><th class="num">${t("hz.c.avg")}</th></tr>` +
     r.bySymbol.map((b) => `<tr><td><b>${esc(b.symbol)}</b> <span class="dim">${esc(b.name === b.symbol ? "" : b.name)}</span></td><td class="num">${b.calls}</td><td class="num">${b.bull} / ${b.bear}</td><td class="num">${rate(b.winRate)}</td><td class="num ${cls(b.avgReturn)}">${pct(b.avgReturn)}</td></tr>`).join("");
 
-  const cell = (o) => o ? `<td class="num"><span class="${cls(o.adj)}">${pct(o.adj)}</span><br><small class="${cls(o.excess)}">超额 ${pct(o.excess)}</small></td>` : `<td class="num dim">未到期</td>`;
+  const cell = (o) => o ? `<td class="num"><span class="${cls(o.adj)}">${pct(o.adj)}</span><br><small class="${cls(o.excess)}">${t("calls.excess")} ${pct(o.excess)}</small></td>` : `<td class="num dim">${t("calls.pending")}</td>`;
   const own = (c) => {
-    const o = c.outcomes.own, tag = `${c.horizonDays} 日${c.horizonStated ? "" : "（推断）"}`;
+    const o = c.outcomes.own, tag = t("calls.days", { n: c.horizonDays }) + (c.horizonStated ? "" : t("calls.inferred"));
     return o
-      ? `<td class="num"><b class="${cls(o.adj)}">${pct(o.adj)}</b><br><small class="${cls(o.excess)}">超额 ${pct(o.excess)}</small><br><small class="dim">${tag} · ${o.exitReason === "到期" ? `持有 ${o.days} 日` : `${esc(o.exitReason)}（${o.days} 日）`}</small></td>`
-      : `<td class="num dim">未到期<br><small>${tag}</small></td>`;
+      ? `<td class="num"><b class="${cls(o.adj)}">${pct(o.adj)}</b><br><small class="${cls(o.excess)}">${t("calls.excess")} ${pct(o.excess)}</small><br><small class="dim">${tag} · ${t("exit." + o.exitReason, { n: o.days })}</small></td>`
+      : `<td class="num dim">${t("calls.pending")}<br><small>${tag}</small></td>`;
   };
-  $("calls").innerHTML = `<tr><th>发帖日</th><th>标的</th><th>方向</th><th>原帖</th><th class="num">进场价</th><th class="num">博主口径</th>${r.horizonList.map((k) => `<th class="num">${k} 日</th>`).join("")}</tr>` +
-    r.calls.map((c) => `<tr><td style="white-space:nowrap">${esc(c.date)}</td><td><b>${esc(c.symbol)}</b></td><td><span class="chip ${c.direction === "bull" ? "bull" : "bear"}">${c.direction === "bull" ? "看涨" : "看跌"}</span></td>
-      <td class="post">${c.fromImage ? `<span class="chip">来自图片</span> ` : ""}${esc(c.text) || `<span class="dim">（仅图片）</span>`}${safeUrl(c.url) ? ` <a href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener noreferrer">原帖</a>` : ""}${c.note ? `<small>${esc(c.note)}</small>` : ""}</td>
-      ${c.status === "no_data" ? `<td class="num dim" colspan="${2 + r.horizonList.length}">查不到当时的行情</td>` : `<td class="num">${c.entryPrice ? c.entryPrice.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}<br><small class="dim">${esc(c.entryDate ?? "")} ${esc(c.entryMode ?? "")}</small></td>${own(c)}${r.horizonList.map((k) => cell(c.outcomes[k])).join("")}`}</tr>`).join("");
+  $("calls").innerHTML = `<tr><th>${t("calls.c.date")}</th><th>${t("sym.c.symbol")}</th><th>${t("calls.c.dir")}</th><th>${t("calls.c.post")}</th><th class="num">${t("calls.c.entry")}</th><th class="num">${t("calls.c.own")}</th>${r.horizonList.map((k) => `<th class="num">${t("calls.days", { n: k })}</th>`).join("")}</tr>` +
+    r.calls.map((c) => `<tr><td style="white-space:nowrap">${esc(c.date)}</td><td><b>${esc(c.symbol)}</b></td><td><span class="chip ${c.direction === "bull" ? "bull" : "bear"}">${t(c.direction === "bull" ? "calls.bull" : "calls.bear")}</span></td>
+      <td class="post">${c.fromImage ? `<span class="chip">${t("calls.fromImage")}</span> ` : ""}${esc(c.text) || `<span class="dim">${t("calls.imageOnly")}</span>`}${safeUrl(c.url) ? ` <a href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener noreferrer">${t("calls.original")}</a>` : ""}${c.note ? `<small>${esc(c.note)}</small>` : ""}</td>
+      ${c.status === "no_data" ? `<td class="num dim" colspan="${2 + r.horizonList.length}">${t("calls.noData")}</td>` : `<td class="num">${c.entryPrice ? c.entryPrice.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}<br><small class="dim">${esc(c.entryDate ?? "")} ${c.entryMode ? t("mode." + c.entryMode) : ""}</small></td>${own(c)}${r.horizonList.map((k) => cell(c.outcomes[k])).join("")}`}</tr>`).join("");
   $("result").hidden = false;
-  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (!keepScroll) $("result").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 // —— 启动 ——
+applyLang();
 fetch("/api/config").then((r) => r.json()).then((c) => {
   caps = c;
-  $("provider").innerHTML = c.providers.map((p) => `<option value="${esc(p.id)}">${esc(p.label)}</option>`).join("");
-  $("providerGuide").innerHTML = c.providers.filter((p) => p.keyUrl).map((p) => `<li><b>${esc(p.label)}</b>：<a href="${esc(p.keyUrl)}" target="_blank" rel="noopener noreferrer">打开 Key 页面</a>${p.keyHint ? `，${esc(p.keyHint)}` : ""}${p.defaultModel ? `；模型示例 <code>${esc(p.defaultModel)}</code>` : ""}${p.vision ? "；默认模型能看图" : ""}</li>`).join("");
+  renderProviders();
   loadKeys();
-  const k = currentKeys();
   refreshStatus();
+  const k = currentKeys();
   if (!(k.fetchKey || c.serverFetchKey)) $("guide").open = true;
   const job = store.get("kol.job");
   if (job) poll(job);
-}).catch(() => showError("连不上服务器，请稍后刷新重试"));
+}).catch(() => showError({ code: "network" }));
 loadReports();
 </script>
 </body>

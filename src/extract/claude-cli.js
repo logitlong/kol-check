@@ -193,7 +193,7 @@ async function localizeImages(posts, handle) {
   return { map, dir };
 }
 
-export async function extractWithClaudeCli(posts, { handle = "unknown", onProgress, model, effort } = {}) {
+export async function extractWithClaudeCli(posts, { handle = "unknown", onProgress, model, effort, langLine = "" } = {}) {
   const { map: imageMap, dir: mediaDir } = await localizeImages(posts, handle);
   const withImg = posts.filter((p) => imageMap.has(p.id));
   const textOnly = posts.filter((p) => !imageMap.has(p.id));
@@ -214,7 +214,7 @@ export async function extractWithClaudeCli(posts, { handle = "unknown", onProgre
         ...(batch.withImages ? { images: imageMap.get(p.id) } : {}),
       }));
       try {
-        const data = await runClaude(JSON.stringify(payload), { withImages: batch.withImages, cwd: batch.withImages ? mediaDir : os.tmpdir(), model, effort });
+        const data = await runClaude(JSON.stringify(payload) + langLine, { withImages: batch.withImages, cwd: batch.withImages ? mediaDir : os.tmpdir(), model, effort });
         const r = normalizeResult(data, ids);
         calls.push(...r.calls);
         flexIds.push(...r.flexIds);
