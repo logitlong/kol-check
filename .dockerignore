@@ -1,0 +1,6 @@
+node_modules
+.env
+.git
+data/prices
+data/reports
+data/media

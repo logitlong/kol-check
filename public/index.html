@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KOL Check · 财经博主可信度验证</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --card: #ffffff; --ink: #1c1b18; --muted: #6f6c64; --line: #e4e1d8;
+    --accent: #1f4fd8; --good: #0b8a4b; --bad: #c7362b; --warn: #b26a00; --chip: #efede6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #131416; --card: #1c1e21; --ink: #ecebe7; --muted: #9a988f; --line: #2c2f33;
+      --accent: #7da2ff; --good: #3ecf8e; --bad: #ff7a6e; --warn: #f0b24a; --chip: #26292d; }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", "Segoe UI", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 80px; }
+  h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  h3 { font-size: 14.5px; margin: 18px 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tab { border: 1px solid var(--line); background: transparent; color: var(--ink); padding: 6px 14px; border-radius: 999px; cursor: pointer; font: inherit; }
+  .tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  input[type=text], input[type=password], input[type=url], textarea, select {
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; max-width: 100%; }
+  input[type=text], input[type=password], input[type=url] { flex: 1; min-width: 200px; }
+  textarea { width: 100%; min-height: 150px; margin-top: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  button { font: inherit; cursor: pointer; }
+  button.go { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 11px 22px; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { button.go { color: #10131a; } }
+  button.go:disabled { opacity: .55; cursor: progress; }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 8px 14px; }
+  .field { margin-top: 12px; }
+  .field > label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .field .row > * { flex: 1; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .notice { border-left: 3px solid var(--warn); padding: 8px 12px; background: var(--chip); border-radius: 0 8px 8px 0; font-size: 13.5px; margin-top: 12px; }
+  .error { border-left-color: var(--bad); color: var(--bad); }
+  .ok { color: var(--good); } .missing { color: var(--warn); }
+  .bar { height: 8px; background: var(--chip); border-radius: 999px; overflow: hidden; margin-top: 10px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+  .bar.indet i { width: 35%; animation: slide 1.4s infinite ease-in-out; }
+  @keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+  .hero { display: grid; grid-template-columns: 150px 1fr; gap: 24px; align-items: center; }
+  @media (max-width: 600px) { .hero { grid-template-columns: 1fr; justify-items: center; text-align: center; } }
+  .ring { width: 150px; height: 150px; }
+  .ring text { fill: var(--ink); font-weight: 700; }
+  .grade { font-size: 22px; font-weight: 700; margin: 0; }
+  .meta { color: var(--muted); font-size: 13px; margin-top: 8px; word-break: break-word; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .tile b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+  .tile span { color: var(--muted); font-size: 12.5px; }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; white-space: nowrap; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pos { color: var(--good); } .neg { color: var(--bad); } .dim { color: var(--muted); }
+  .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--chip); font-size: 12px; white-space: nowrap; }
+  .chip.bull { color: var(--good); } .chip.bear { color: var(--bad); }
+  .post { max-width: 380px; min-width: 220px; }
+  .post small { color: var(--muted); display: block; }
+  a { color: var(--accent); }
+  details > summary { cursor: pointer; font-weight: 600; }
+  details p, details li { color: var(--muted); font-size: 13.5px; }
+  details ol, details ul { padding-left: 20px; margin: 6px 0; }
+  .flag { margin-bottom: 10px; }
+  .flag q { display: block; color: var(--muted); font-size: 13px; margin-left: 12px; }
+  .kols { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+  .kol { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: transparent; color: var(--ink); text-align: left; width: 100%; }
+  .kol .s { font-size: 20px; font-weight: 700; min-width: 34px; text-align: center; font-variant-numeric: tabular-nums; }
+  .kol small { color: var(--muted); display: block; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>KOL Check</h1>
+  <p class="sub">看不懂股票，那就验证说话的人。把财经博主过去的每一次喊单，拿到真实行情里对一遍账。支持美股、日股、韩股、港股和加密货币。</p>
+
+  <section class="card" id="kolsCard" hidden>
+    <h2>已经分析过的博主</h2>
+    <div class="kols" id="kols"></div>
+    <div class="hint">点开直接看报告，不需要填任何 key。</div>
+  </section>
+
+  <section class="card">
+    <h2>验证一个博主</h2>
+    <div class="tabs" role="tablist">
+      <button class="tab" data-src="x" aria-selected="true">贴主页链接</button>
+      <button class="tab" data-src="import" aria-selected="false">粘贴帖子</button>
+      <button class="tab" data-src="demo" aria-selected="false">看演示</button>
+    </div>
+    <div class="row">
+      <input id="handle" type="text" placeholder="https://x.com/用户名 或 @用户名" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button id="go" class="go">开始验证</button>
+    </div>
+    <div class="field" id="maxRow">
+      <label for="maxPosts">分析最近多少条帖子</label>
+      <select id="maxPosts">
+        <option value="200">最近 200 条（最快，抓帖约 $0.03）</option>
+        <option value="500" selected>最近 500 条（推荐，抓帖约 $0.08）</option>
+        <option value="1000">最近 1000 条（抓帖约 $0.15）</option>
+        <option value="3200">最近 3200 条（最全，抓帖约 $0.5，要等很久）</option>
+      </select>
+    </div>
+    <div id="importBox" hidden>
+      <textarea id="importText" placeholder="每行一条：2024-03-14 比特币新高，下一站 10 万，上车！&#10;也可以直接粘贴 JSON 数组 [{&quot;created_at&quot;:&quot;…&quot;,&quot;text&quot;:&quot;…&quot;}]"></textarea>
+    </div>
+    <div id="srcHint" class="hint"></div>
+    <div id="keyStatus" class="hint"></div>
+    <div id="error" class="notice error" hidden></div>
+    <div id="progress" hidden>
+      <div class="notice" id="stage">准备中…</div>
+      <div class="bar" id="bar"><i></i></div>
+      <div class="hint">分析需要几分钟到十几分钟。可以切到别的 App，回来再打开这个页面会自动接着显示。</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <details id="keysBox">
+      <summary>我的 Key <span id="keysBadge" class="chip"></span></summary>
+      <p>这个网站不提供免费的抓帖和 AI，需要你填自己的两个 key。key <b>只保存在你这台设备的浏览器里</b>，提交分析时随请求发到服务器使用，服务器不保存、不记录。</p>
+
+      <div class="field">
+        <label for="fetchKey">① 抓帖 key（twitterapi.io）</label>
+        <input id="fetchKey" type="password" placeholder="粘贴 twitterapi.io 的 API Key" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </div>
+
+      <div class="field">
+        <label for="provider">② AI 服务商</label>
+        <select id="provider"></select>
+      </div>
+      <div class="field">
+        <label for="aiKey">AI 的 API Key <span id="aiKeyHint"></span></label>
+        <input id="aiKey" type="password" placeholder="粘贴 API Key" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="hint" id="aiKeyLink"></div>
+      </div>
+      <div class="field" id="baseUrlRow" hidden>
+        <label for="baseUrl">接口地址（Base URL）</label>
+        <input id="baseUrl" type="url" placeholder="https://api.example.com/v1" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </div>
+      <div class="field">
+        <label for="aiModelText">模型</label>
+        <select id="aiModelSel" hidden></select>
+        <input id="aiModelText" type="text" placeholder="模型名" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="hint">各家的模型名经常更新，这里预填的只是示例，以服务商后台显示的为准。</div>
+      </div>
+      <div class="field">
+        <label><input type="checkbox" id="vision"> 让 AI 看帖子里的图片（持仓截图、K 线标注）。模型必须支持图片，否则会自动退回只看文字；看图更费钱。</label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="ghost" id="saveKeys">保存到这台设备</button>
+        <button class="ghost" id="clearKeys">清除</button>
+        <span id="keysSaved" class="hint" style="margin:0"></span>
+      </div>
+
+      <div id="localRow" hidden>
+        <h3>本机 Claude（不填 AI key 时使用）</h3>
+        <div class="row">
+          <select id="model"></select>
+          <select id="effort"></select>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section class="card">
+    <details id="guide">
+      <summary>第一次用？两个 Key 怎么申请</summary>
+
+      <h3>① 抓帖 key：twitterapi.io（用来读取博主的帖子）</h3>
+      <ol>
+        <li>打开 <a href="https://twitterapi.io" target="_blank" rel="noopener noreferrer">twitterapi.io</a>，注册并登录（可以用 Google 账号）。</li>
+        <li>登录后进入后台（Dashboard），页面上会显示你的 <b>API Key</b>，点复制。</li>
+        <li>回到本页，展开「我的 Key」，粘贴到第 ① 栏，点「保存到这台设备」。</li>
+      </ol>
+      <p>费用：新账号一般有少量免费额度，够试几百条帖子。之后大约每 1000 条帖子 0.15 美元，分析一个博主最近 500 条不到 0.1 美元。它是第三方服务，不是 X 官方的；价格和额度以它后台显示的为准。免费账号有请求频率限制，抓帖会慢一些。</p>
+
+      <h3>② AI 的 key（用来读懂每条帖子在说什么）</h3>
+      <p>任选一家你已经有账号的即可。步骤都一样：打开后台 → 创建 API Key → 复制 → 回到本页「我的 Key」里选对服务商并粘贴。大多数服务商需要先充值一点余额，key 才能用。</p>
+      <ul id="providerGuide"></ul>
+      <p>怎么选：想要最准、能看图，用 Claude、GPT 或 Gemini；想便宜、在国内好充值，用 DeepSeek、通义千问或豆包（要看图需换成它们带视觉能力的模型）。注意：ChatGPT、Claude、豆包这些 App 的会员<b>不等于</b> API 额度，API 需要在各自的开发者后台单独开通和充值。</p>
+      <p>AI 的花费取决于帖子数量和你选的模型，500 条帖子用便宜的模型通常只要几分钱到几毛钱人民币，用最强的模型可能要几块到十几块。</p>
+
+      <h3>③ 开始用</h3>
+      <ol>
+        <li>在上面「验证一个博主」里贴上博主的 X 主页链接。</li>
+        <li>选择分析多少条帖子，点「开始验证」。</li>
+        <li>等进度条走完，就能看到评分和逐条对账。</li>
+      </ol>
+    </details>
+  </section>
+
+  <div id="result" hidden>
+    <section class="card hero">
+      <svg class="ring" viewBox="0 0 120 120" role="img" aria-label="可信度评分">
+        <circle cx="60" cy="60" r="50" fill="none" stroke="var(--line)" stroke-width="10"/>
+        <circle id="arc" cx="60" cy="60" r="50" fill="none" stroke-width="10" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+        <text id="scoreText" x="60" y="66" text-anchor="middle" font-size="34"></text>
+        <text x="60" y="86" text-anchor="middle" font-size="10" style="fill:var(--muted);font-weight:400">可信度 / 100</text>
+      </svg>
+      <div>
+        <p class="grade" id="grade"></p>
+        <div id="verdict"></div>
+        <div class="meta" id="meta"></div>
+      </div>
+    </section>
+
+    <div class="tiles" id="tiles"></div>
+
+    <section class="card">
+      <h2>不同持有期的表现</h2>
+      <div class="scroll"><table id="horizons"></table></div>
+      <div class="hint">「按帖子自己的期限」= 他说今晚就看 1 天，说这周就看 5 天，说长期才看几个月；期限内他自己喊了平仓或反过来说，就算到那一刻为止。下面几行固定持有期只是参考。<br>「方向对」= 喊涨后真涨了 / 喊跌后真跌了。「跑赢大盘」= 扣掉同期大盘涨跌后仍然赚钱——牛市里闭眼喊多也能"方向对"，所以评分主要看后者。</div>
+    </section>
+
+    <section class="card">
+      <h2>危险信号</h2>
+      <div id="flags"></div>
+    </section>
+
+    <section class="card">
+      <h2>按标的统计</h2>
+      <div class="scroll"><table id="symbols"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>逐条对账</h2>
+      <div class="scroll"><table id="calls"></table></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <details>
+      <summary>评分是怎么算的？有哪些局限？</summary>
+      <ul>
+        <li><b>提取观点</b>：AI 逐条读帖子，只保留"对具体标的、有明确方向"的看法；新闻转述、复盘、提问不算。同一标的同一方向短期内反复喊只算一次。</li>
+        <li><b>进场价</b>：发帖之后第一个能成交的价格——发帖时没开盘，用下一次开盘价；盘中发帖，用发帖后的盘中价（两年以前的帖子没有盘中数据，用当天收盘价）。这样不会把发帖前已经发生的涨跌算成博主的功劳，也不会错过他说的"今晚"。进场当天算第 1 个交易日。</li>
+        <li><b>期限</b>：每条观点按帖子自己的意思定期限（短线几天、中线几周、长线几个月），没明说的由 AI 按措辞推断并标注「推断」。期限内博主自己说了清仓、止盈或反向观点，就按那条帖子之后第一个能成交的价格结束。</li>
+        <li><b>结果</b>：按上面的期限持有后的涨跌（另附固定 1 / 5 / 20 / 60 个交易日作参考），并减去同期大盘（美股对标普 500，日股对日经 225，韩股对 KOSPI，山寨币对 BTC；BTC 和指数本身对"同期随便哪天买入"的平均收益）。</li>
+        <li><b>分数</b>：50 分 = 抛硬币。以"按帖子自己的期限"的跑赢大盘比例为主，加上平均超额收益（±15 分封顶），再扣危险信号（最多 20 分）。样本越少，分数越向 50 收缩。</li>
+        <li><b>局限</b>：① 删掉的帖子看不到，博主事后删除错误预测会让分数虚高；② 没有考虑仓位和止损；③ 不同 AI 模型对同一条帖子的判断可能不同，换模型分数会有出入；④ 过去准不代表未来准。</li>
+        <li><b>声明</b>：分数是算法根据公开帖子和公开行情自动估算的，不是对任何人的事实认定，也不构成投资建议。每条观点都附了原帖链接，请自行核对。</li>
+      </ul>
+    </details>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pct = (x, d = 1) => (x == null ? "—" : (x > 0 ? "+" : "") + (x * 100).toFixed(d) + "%");
+const rate = (x) => (x == null ? "—" : Math.round(x * 100) + "%");
+const cls = (x) => (x == null ? "dim" : x > 0 ? "pos" : x < 0 ? "neg" : "");
+const safeUrl = (u) => (/^https:\/\//i.test(String(u || "")) ? u : "");
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+let source = "x", caps = { providers: [], models: [], efforts: [] }, pollTimer = null;
+
+const HINTS = {
+  x: "贴上博主的 X 主页链接，后台自动读取他的历史帖子并回溯行情。",
+  import: "把帖子连同日期贴进来，每行一条。这种方式不需要抓帖 key，报告也不会出现在公开列表里。",
+  demo: "一个虚构博主的 45 条帖子（中/英/日文混合，含美股、日股、韩股、BTC），行情是真实的。不填 key 也能看，用来了解报告长什么样。",
+};
+
+// —— Key 面板 ——
+const provider = () => caps.providers.find((p) => p.id === $("provider").value) || caps.providers[0];
+const aiModel = () => (provider()?.kind === "anthropic" ? $("aiModelSel").value : $("aiModelText").value.trim());
+
+function onProviderChange(keepModel) {
+  const p = provider();
+  if (!p) return;
+  const isClaude = p.kind === "anthropic";
+  $("aiModelSel").hidden = !isClaude;
+  $("aiModelText").hidden = isClaude;
+  if (isClaude) $("aiModelSel").innerHTML = p.models.map((m) => `<option value="${esc(m)}"${m === p.defaultModel ? " selected" : ""}>${esc(m)}</option>`).join("");
+  else if (!keepModel) $("aiModelText").value = p.defaultModel || "";
+  if (!keepModel) $("vision").checked = Boolean(p.vision);
+  $("baseUrlRow").hidden = p.id !== "custom";
+  $("aiKeyHint").textContent = p.keyHint ? `（${p.keyHint}）` : "";
+  $("aiKeyLink").innerHTML = p.keyUrl ? `去哪拿：<a href="${esc(p.keyUrl)}" target="_blank" rel="noopener noreferrer">${esc(p.label)} 的 Key 页面</a>` : "";
+}
+
+function loadKeys() {
+  const k = store.get("kol.keys") || {};
+  $("fetchKey").value = k.fetchKey || "";
+  if (k.provider && caps.providers.some((p) => p.id === k.provider)) $("provider").value = k.provider;
+  onProviderChange(false);
+  $("aiKey").value = k.aiKey || "";
+  $("baseUrl").value = k.baseUrl || "";
+  if (k.model) { if (provider().kind === "anthropic") $("aiModelSel").value = k.model; else $("aiModelText").value = k.model; }
+  if (typeof k.vision === "boolean") $("vision").checked = k.vision;
+}
+function currentKeys() {
+  return { fetchKey: $("fetchKey").value.trim(), provider: $("provider").value, aiKey: $("aiKey").value.trim(), baseUrl: $("baseUrl").value.trim(), model: aiModel(), vision: $("vision").checked };
+}
+function refreshStatus() {
+  const k = currentKeys();
+  const hasFetch = Boolean(k.fetchKey) || caps.serverFetchKey;
+  const hasAi = Boolean(k.aiKey) || caps.localClaude || caps.serverAiKey;
+  $("keysBadge").textContent = hasFetch && hasAi ? "已就绪" : "还没填完";
+  const parts = [];
+  if (source === "x") parts.push(hasFetch ? `<span class="ok">抓帖 key ✓</span>` : `<span class="missing">还没填抓帖 key</span>`);
+  if (source !== "demo" || hasAi) {
+    parts.push(k.aiKey ? `<span class="ok">AI：${esc(provider()?.label.split("（")[0])} ✓</span>`
+      : caps.localClaude ? `<span class="ok">AI：本机 Claude ✓</span>`
+      : caps.serverAiKey ? `<span class="ok">AI ✓</span>` : `<span class="missing">还没填 AI key</span>`);
+  }
+  const need = (source === "x" && !hasFetch) || (source !== "demo" && !hasAi);
+  $("keyStatus").innerHTML = parts.join("　") + (need ? `　<a href="#" id="openKeys">去填写</a>` : "");
+  $("openKeys")?.addEventListener("click", (e) => { e.preventDefault(); $("keysBox").open = true; $("keysBox").scrollIntoView({ behavior: "smooth" }); });
+  $("maxRow").hidden = source !== "x";
+}
+
+function setSource(s) {
+  source = s;
+  document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.src === s));
+  $("importBox").hidden = s !== "import";
+  $("handle").disabled = s === "demo";
+  $("srcHint").textContent = HINTS[s];
+  refreshStatus();
+}
+document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => setSource(t.dataset.src)));
+$("provider").addEventListener("change", () => { onProviderChange(false); refreshStatus(); });
+["fetchKey", "aiKey"].forEach((id) => $(id).addEventListener("input", refreshStatus));
+$("saveKeys").addEventListener("click", () => {
+  $("keysSaved").textContent = store.set("kol.keys", currentKeys()) ? "已保存在这台设备的浏览器里" : "这个浏览器不允许保存（可能是无痕模式），本次仍可使用";
+  refreshStatus();
+});
+$("clearKeys").addEventListener("click", () => { store.del("kol.keys"); loadKeys(); $("keysSaved").textContent = "已清除"; refreshStatus(); });
+$("handle").addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+$("go").addEventListener("click", run);
+
+// —— 提交 + 轮询进度 ——
+function showError(msg) { $("error").textContent = msg; $("error").hidden = false; }
+function setBusy(b) { $("go").disabled = b; $("go").textContent = b ? "分析中…" : "开始验证"; $("progress").hidden = !b; }
+
+async function run() {
+  $("error").hidden = true;
+  const k = currentKeys();
+  const body = { source, input: $("handle").value, text: $("importText").value, maxPosts: Number($("maxPosts").value), model: $("model").value, effort: $("effort").value };
+  if (k.fetchKey) body.fetchKey = k.fetchKey;
+  if (k.aiKey) body.ai = { provider: k.provider, apiKey: k.aiKey, model: k.model, baseUrl: k.baseUrl, vision: k.vision };
+  setBusy(true);
+  $("stage").textContent = "正在提交…";
+  $("bar").className = "bar indet";
+  try {
+    const res = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "提交失败");
+    store.set("kol.job", data.jobId);
+    poll(data.jobId);
+  } catch (e) {
+    setBusy(false);
+    showError(e.message);
+  }
+}
+
+function poll(jobId) {
+  clearTimeout(pollTimer);
+  setBusy(true);
+  const tick = async () => {
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`);
+      const j = await res.json();
+      if (res.status === 404) throw new Error(j.error);
+      if (j.status === "done") { store.del("kol.job"); setBusy(false); render(j.report); loadReports(); return; }
+      if (j.status === "error") { store.del("kol.job"); setBusy(false); showError(j.error); return; }
+      $("stage").textContent = j.stage || "处理中…";
+      const hasPct = j.total > 0 && j.done != null;
+      $("bar").className = hasPct ? "bar" : "bar indet";
+      $("bar").firstElementChild.style.width = hasPct ? Math.min(100, (j.done / j.total) * 100) + "%" : "";
+    } catch (e) {
+      if (/不存在|过期/.test(e.message)) { store.del("kol.job"); setBusy(false); showError(e.message); return; }
+      // 网络抖动（手机切后台很常见）：不放弃，继续等
+    }
+    pollTimer = setTimeout(tick, 2500);
+  };
+  tick();
+}
+document.addEventListener("visibilitychange", () => { const id = store.get("kol.job"); if (!document.hidden && id) poll(id); });
+
+// —— 已分析的博主 ——
+async function loadReports() {
+  try {
+    const list = await (await fetch("/api/reports")).json();
+    $("kolsCard").hidden = !list.length;
+    $("kols").innerHTML = list.map((r) => {
+      const c = r.score == null ? "dim" : r.score >= 57 ? "pos" : r.score >= 45 ? "" : "neg";
+      return `<button class="kol" data-h="${esc(r.handle)}"><span class="s ${c}">${r.score ?? "?"}</span><span><b>@${esc(r.handle)}</b><small>${esc(r.name || "")} · ${esc(r.grade || "")}</small><small>${r.posts ?? 0} 条帖子 · ${String(r.generatedAt || "").slice(0, 10)}</small></span></button>`;
+    }).join("");
+    document.querySelectorAll(".kol").forEach((b) => b.addEventListener("click", () => openReport(b.dataset.h)));
+  } catch {}
+}
+async function openReport(handle) {
+  try {
+    const res = await fetch(`/api/reports/${encodeURIComponent(handle)}`);
+    const r = await res.json();
+    if (!res.ok) throw new Error(r.error);
+    render(r);
+  } catch (e) { showError(e.message); }
+}
+
+// —— 报告 ——
+function render(r) {
+  const P = r.primaryHorizon, h = r.horizons[P], s = r.rating.score;
+  const hLabel = (k) => (k === "own" ? "按帖子自己的期限" : `固定 ${k} 个交易日`);
+  const color = s == null ? "var(--muted)" : s >= 57 ? "var(--good)" : s >= 45 ? "var(--warn)" : "var(--bad)";
+  const C = 2 * Math.PI * 50;
+  $("arc").setAttribute("stroke", color);
+  $("arc").setAttribute("stroke-dasharray", `${((s ?? 0) / 100) * C} ${C}`);
+  $("scoreText").textContent = s ?? "?";
+  $("grade").textContent = `@${r.profile.handle} · ${r.rating.grade}`;
+  $("grade").style.color = color;
+  $("verdict").textContent = r.rating.verdict;
+  $("meta").innerHTML = `${r.profile.name && r.profile.name !== r.profile.handle ? esc(r.profile.name) + " ｜ " : ""}数据来源：${esc(r.source)} ｜ 观点提取：${esc(r.extractor)}<br>帖子 ${r.posts.total} 条（${r.posts.from} ~ ${r.posts.to}）` +
+    (r.callStats.duplicatesMerged ? ` ｜ 合并重复喊单 ${r.callStats.duplicatesMerged} 条` : "") +
+    (r.callStats.exitSignals ? ` ｜ 识别到平仓表态 ${r.callStats.exitSignals} 条` : "") +
+    ` ｜ 生成于 ${String(r.generatedAt).slice(0, 10)}`;
+
+  $("tiles").innerHTML = [
+    [r.callStats.total, "可验证的观点"],
+    [r.callStats.total - (h.n ?? 0), "尚未到期 / 无行情"],
+    [rate(h.hitRate), "方向对的比例"],
+    [rate(h.winRate), "跑赢大盘比例"],
+    [pct(h.avgExcess), "平均超额收益"],
+  ].map(([v, l]) => `<div class="tile"><b>${v}</b><span>${l}</span></div>`).join("");
+
+  $("horizons").innerHTML = `<tr><th>持有期</th><th class="num">样本</th><th class="num">方向对</th><th class="num">跑赢大盘</th><th class="num">平均收益</th><th class="num">中位收益</th><th class="num">平均超额</th></tr>` +
+    [P, ...r.horizonList].map((k) => { const x = r.horizons[k]; return `<tr><td>${hLabel(k)}${k === P ? " <span class='chip'>评分口径</span>" : ""}</td><td class="num">${x.n}</td><td class="num">${rate(x.hitRate)}</td><td class="num">${rate(x.winRate)}</td><td class="num ${cls(x.avgReturn)}">${pct(x.avgReturn)}</td><td class="num ${cls(x.medianReturn)}">${pct(x.medianReturn)}</td><td class="num ${cls(x.avgExcess)}">${pct(x.avgExcess)}</td></tr>`; }).join("");
+
+  $("flags").innerHTML = r.redFlags.flags.length
+    ? `<p>${r.posts.total} 条帖子里有 ${r.redFlags.flaggedPosts} 条（${rate(r.redFlags.ratio)}）命中引流 / 承诺收益 / 返佣话术，已在评分中扣 ${r.rating.parts?.penalty ?? 0} 分：</p>` +
+      r.redFlags.flags.map((f) => `<div class="flag"><b class="neg">${esc(f.label)}</b> × ${f.count}${f.examples.map((e) => `<q>${esc(e.date)}　${esc(e.text)}</q>`).join("")}</div>`).join("")
+    : `<p class="dim">没有发现引流、承诺收益、返佣链接这类典型话术。</p>`;
+
+  $("symbols").innerHTML = `<tr><th>标的</th><th class="num">喊单次数</th><th class="num">看涨 / 看跌</th><th class="num">跑赢大盘</th><th class="num">平均收益</th></tr>` +
+    r.bySymbol.map((b) => `<tr><td><b>${esc(b.symbol)}</b> <span class="dim">${esc(b.name === b.symbol ? "" : b.name)}</span></td><td class="num">${b.calls}</td><td class="num">${b.bull} / ${b.bear}</td><td class="num">${rate(b.winRate)}</td><td class="num ${cls(b.avgReturn)}">${pct(b.avgReturn)}</td></tr>`).join("");
+
+  const cell = (o) => o ? `<td class="num"><span class="${cls(o.adj)}">${pct(o.adj)}</span><br><small class="${cls(o.excess)}">超额 ${pct(o.excess)}</small></td>` : `<td class="num dim">未到期</td>`;
+  const own = (c) => {
+    const o = c.outcomes.own, tag = `${c.horizonDays} 日${c.horizonStated ? "" : "（推断）"}`;
+    return o
+      ? `<td class="num"><b class="${cls(o.adj)}">${pct(o.adj)}</b><br><small class="${cls(o.excess)}">超额 ${pct(o.excess)}</small><br><small class="dim">${tag} · ${o.exitReason === "到期" ? `持有 ${o.days} 日` : `${esc(o.exitReason)}（${o.days} 日）`}</small></td>`
+      : `<td class="num dim">未到期<br><small>${tag}</small></td>`;
+  };
+  $("calls").innerHTML = `<tr><th>发帖日</th><th>标的</th><th>方向</th><th>原帖</th><th class="num">进场价</th><th class="num">博主口径</th>${r.horizonList.map((k) => `<th class="num">${k} 日</th>`).join("")}</tr>` +
+    r.calls.map((c) => `<tr><td style="white-space:nowrap">${esc(c.date)}</td><td><b>${esc(c.symbol)}</b></td><td><span class="chip ${c.direction === "bull" ? "bull" : "bear"}">${c.direction === "bull" ? "看涨" : "看跌"}</span></td>
+      <td class="post">${c.fromImage ? `<span class="chip">来自图片</span> ` : ""}${esc(c.text) || `<span class="dim">（仅图片）</span>`}${safeUrl(c.url) ? ` <a href="${esc(safeUrl(c.url))}" target="_blank" rel="noopener noreferrer">原帖</a>` : ""}${c.note ? `<small>${esc(c.note)}</small>` : ""}</td>
+      ${c.status === "no_data" ? `<td class="num dim" colspan="${2 + r.horizonList.length}">查不到当时的行情</td>` : `<td class="num">${c.entryPrice ? c.entryPrice.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}<br><small class="dim">${esc(c.entryDate ?? "")} ${esc(c.entryMode ?? "")}</small></td>${own(c)}${r.horizonList.map((k) => cell(c.outcomes[k])).join("")}`}</tr>`).join("");
+  $("result").hidden = false;
+  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// —— 启动 ——
+fetch("/api/config").then((r) => r.json()).then((c) => {
+  caps = c;
+  $("provider").innerHTML = c.providers.map((p) => `<option value="${esc(p.id)}">${esc(p.label)}</option>`).join("");
+  $("providerGuide").innerHTML = c.providers.filter((p) => p.keyUrl).map((p) => `<li><b>${esc(p.label)}</b>：<a href="${esc(p.keyUrl)}" target="_blank" rel="noopener noreferrer">打开 Key 页面</a>${p.keyHint ? `，${esc(p.keyHint)}` : ""}${p.defaultModel ? `；模型示例 <code>${esc(p.defaultModel)}</code>` : ""}${p.vision ? "；默认模型能看图" : ""}</li>`).join("");
+  $("model").innerHTML = c.models.map((m) => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join("");
+  $("effort").innerHTML = c.efforts.map((e) => `<option value="${esc(e.id)}">${esc(e.label)}</option>`).join("");
+  $("localRow").hidden = !c.localClaude;
+  loadKeys();
+  const k = currentKeys();
+  setSource(k.fetchKey || c.serverFetchKey ? "x" : "demo");
+  if (!(k.fetchKey || c.serverFetchKey)) $("guide").open = true;
+  const job = store.get("kol.job");
+  if (job) poll(job);
+}).catch(() => showError("连不上服务器，请稍后刷新重试"));
+loadReports();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "kol-check",
+  "version": "1.0.0",
+  "description": "验证财经博主可信度：把历史喊单拿到真实行情里对账",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "zod": "^4.6.7"
+  },
+  "engines": {
+    "node": ">=20.12"
+  }
+}

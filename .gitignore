@@ -1,0 +1,6 @@
+node_modules/
+.env
+data/prices/
+data/reports/
+data/media/
+.DS_Store
