@@ -7,7 +7,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { fetchFromX, xApiAvailable } from "./sources/x-api.js";
 import { fetchFromTwitterApiIo } from "./sources/twitterapi-io.js";
-import { parseImported } from "./sources/import.js";
 import { extractWithRules } from "./extract/rules.js";
 import { extractWithApi, PROVIDERS } from "./extract/ai.js";
 import { extractWithClaudeCli, claudeCliAvailable } from "./extract/claude-cli.js";
@@ -59,7 +58,7 @@ const cleanKey = (v) => {
  * onStage(text, done?, total?) 用来向页面汇报进度。
  */
 export async function analyze(req, onStage = () => {}) {
-  const { source, input, text } = req;
+  const { source, input } = req;
   const fetchKey = cleanKey(req.fetchKey) || (HOSTED ? "" : process.env.TWITTERAPI_IO_KEY || "");
   const aiKey = cleanKey(req.ai?.apiKey);
   const effort = EFFORTS.find((e) => e.id === (req.ai?.effort ?? req.effort))?.id;
@@ -70,9 +69,6 @@ export async function analyze(req, onStage = () => {}) {
   if (source === "demo") {
     fetched = JSON.parse(await fs.readFile(path.join(ROOT, "data", "demo", "demo_trader.json"), "utf8"));
     sourceLabel = "演示数据（虚构博主，真实行情）";
-  } else if (source === "import") {
-    fetched = parseImported(text, parseHandle(input) || "imported");
-    sourceLabel = "手动导入";
   } else {
     const handle = parseHandle(input);
     if (!handle) throw new Error("没认出账号，请输入主页链接（https://x.com/xxx）或 @用户名");
@@ -156,8 +152,8 @@ export async function analyze(req, onStage = () => {}) {
     calls: calls.sort((a, b) => b.date.localeCompare(a.date)),
   };
 
-  // 只有真实抓取的报告才存下来、出现在"已分析的博主"里；粘贴导入的内容无法核实，不公开
-  if (source !== "demo" && source !== "import") {
+  // 只有真实抓取的报告才存下来、出现在"已分析的博主"里（演示数据仅供开发自测，页面上没有入口）
+  if (source !== "demo") {
     await fs.mkdir(REPORT_DIR, { recursive: true });
     await fs.writeFile(path.join(REPORT_DIR, `${profile.handle.toLowerCase()}.json`), JSON.stringify(report));
   }

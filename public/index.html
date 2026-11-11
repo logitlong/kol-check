@@ -22,14 +22,10 @@
   h3 { font-size: 14.5px; margin: 18px 0 6px; }
   .sub { color: var(--muted); margin: 0 0 20px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-  .tab { border: 1px solid var(--line); background: transparent; color: var(--ink); padding: 6px 14px; border-radius: 999px; cursor: pointer; font: inherit; }
-  .tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
   .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  input[type=text], input[type=password], input[type=url], textarea, select {
+  input[type=text], input[type=password], input[type=url], select {
     padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; font-size: 16px; max-width: 100%; }
   input[type=text], input[type=password], input[type=url] { flex: 1; min-width: 200px; }
-  textarea { width: 100%; min-height: 150px; margin-top: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
   button { font: inherit; cursor: pointer; }
   button.go { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 11px 22px; font-weight: 600; }
   @media (prefers-color-scheme: dark) { button.go { color: #10131a; } }
@@ -92,11 +88,6 @@
 
   <section class="card">
     <h2>验证一个博主</h2>
-    <div class="tabs" role="tablist">
-      <button class="tab" data-src="x" aria-selected="true">贴主页链接</button>
-      <button class="tab" data-src="import" aria-selected="false">粘贴帖子</button>
-      <button class="tab" data-src="demo" aria-selected="false">看演示</button>
-    </div>
     <div class="row">
       <input id="handle" type="text" placeholder="https://x.com/用户名 或 @用户名" autocomplete="off" autocapitalize="off" spellcheck="false">
       <button id="go" class="go">开始验证</button>
@@ -110,10 +101,7 @@
         <option value="3200">最近 3200 条（最全，抓帖约 $0.5，要等很久）</option>
       </select>
     </div>
-    <div id="importBox" hidden>
-      <textarea id="importText" placeholder="每行一条：2024-03-14 比特币新高，下一站 10 万，上车！&#10;也可以直接粘贴 JSON 数组 [{&quot;created_at&quot;:&quot;…&quot;,&quot;text&quot;:&quot;…&quot;}]"></textarea>
-    </div>
-    <div id="srcHint" class="hint"></div>
+    <div class="hint">贴上博主的 X 主页链接，后台自动读取他的历史帖子并回溯行情。</div>
     <div id="keyStatus" class="hint"></div>
     <div id="error" class="notice error" hidden></div>
     <div id="progress" hidden>
@@ -265,13 +253,8 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
   del(k) { try { localStorage.removeItem(k); } catch {} },
 };
-let source = "x", caps = { providers: [], models: [], efforts: [] }, pollTimer = null;
-
-const HINTS = {
-  x: "贴上博主的 X 主页链接，后台自动读取他的历史帖子并回溯行情。",
-  import: "把帖子连同日期贴进来，每行一条。这种方式不需要抓帖 key，报告也不会出现在公开列表里。",
-  demo: "一个虚构博主的 45 条帖子（中/英/日文混合，含美股、日股、韩股、BTC），行情是真实的。不填 key 也能看，用来了解报告长什么样。",
-};
+const source = "x";
+let caps = { providers: [], models: [], efforts: [] }, pollTimer = null;
 
 // —— Key 面板 ——
 const provider = () => caps.providers.find((p) => p.id === $("provider").value) || caps.providers[0];
@@ -310,27 +293,15 @@ function refreshStatus() {
   const hasAi = Boolean(k.aiKey) || caps.localClaude || caps.serverAiKey;
   $("keysBadge").textContent = hasFetch && hasAi ? "已就绪" : "还没填完";
   const parts = [];
-  if (source === "x") parts.push(hasFetch ? `<span class="ok">抓帖 key ✓</span>` : `<span class="missing">还没填抓帖 key</span>`);
-  if (source !== "demo" || hasAi) {
-    parts.push(k.aiKey ? `<span class="ok">AI：${esc(provider()?.label.split("（")[0])} ✓</span>`
-      : caps.localClaude ? `<span class="ok">AI：本机 Claude ✓</span>`
-      : caps.serverAiKey ? `<span class="ok">AI ✓</span>` : `<span class="missing">还没填 AI key</span>`);
-  }
-  const need = (source === "x" && !hasFetch) || (source !== "demo" && !hasAi);
+  parts.push(hasFetch ? `<span class="ok">抓帖 key ✓</span>` : `<span class="missing">还没填抓帖 key</span>`);
+  parts.push(k.aiKey ? `<span class="ok">AI：${esc(provider()?.label.split("（")[0])} ✓</span>`
+    : caps.localClaude ? `<span class="ok">AI：本机 Claude ✓</span>`
+    : caps.serverAiKey ? `<span class="ok">AI ✓</span>` : `<span class="missing">还没填 AI key</span>`);
+  const need = !hasFetch || !hasAi;
   $("keyStatus").innerHTML = parts.join("　") + (need ? `　<a href="#" id="openKeys">去填写</a>` : "");
   $("openKeys")?.addEventListener("click", (e) => { e.preventDefault(); $("keysBox").open = true; $("keysBox").scrollIntoView({ behavior: "smooth" }); });
-  $("maxRow").hidden = source !== "x";
 }
 
-function setSource(s) {
-  source = s;
-  document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.src === s));
-  $("importBox").hidden = s !== "import";
-  $("handle").disabled = s === "demo";
-  $("srcHint").textContent = HINTS[s];
-  refreshStatus();
-}
-document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => setSource(t.dataset.src)));
 $("provider").addEventListener("change", () => { onProviderChange(false); refreshStatus(); });
 ["fetchKey", "aiKey"].forEach((id) => $(id).addEventListener("input", refreshStatus));
 $("saveKeys").addEventListener("click", () => {
@@ -348,7 +319,7 @@ function setBusy(b) { $("go").disabled = b; $("go").textContent = b ? "分析中
 async function run() {
   $("error").hidden = true;
   const k = currentKeys();
-  const body = { source, input: $("handle").value, text: $("importText").value, maxPosts: Number($("maxPosts").value), model: $("model").value, effort: $("effort").value };
+  const body = { source, input: $("handle").value, maxPosts: Number($("maxPosts").value), model: $("model").value, effort: $("effort").value };
   if (k.fetchKey) body.fetchKey = k.fetchKey;
   if (k.aiKey) body.ai = { provider: k.provider, apiKey: k.aiKey, model: k.model, baseUrl: k.baseUrl, vision: k.vision };
   setBusy(true);
@@ -472,7 +443,7 @@ fetch("/api/config").then((r) => r.json()).then((c) => {
   $("localRow").hidden = !c.localClaude;
   loadKeys();
   const k = currentKeys();
-  setSource(k.fetchKey || c.serverFetchKey ? "x" : "demo");
+  refreshStatus();
   if (!(k.fetchKey || c.serverFetchKey)) $("guide").open = true;
   const job = store.get("kol.job");
   if (job) poll(job);

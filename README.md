@@ -80,7 +80,7 @@ npm start
 server.js              HTTP 服务、任务队列
 public/index.html      页面
 src/analyze.js         主流程
-src/sources/           帖子来源（twitterapi.io、X 官方 API、粘贴导入）
+src/sources/           帖子来源（twitterapi.io、X 官方 API）
 src/extract/           观点提取（通用 AI 接口、本机 Claude、关键词规则）
 src/prices.js          行情（Yahoo Finance）
 src/score.js           对账与评分
