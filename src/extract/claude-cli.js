@@ -115,7 +115,8 @@ export function findClaudeBin() {
 }
 
 export function claudeCliAvailable() {
-  if (process.env.HOSTED) return false; // 线上部署没有本机 Claude，一律走使用者自己的 API key
+  // 默认关闭：线上版全部走使用者自己填的云端 AI key。仅本地调试时在 .env 里设 LOCAL_CLAUDE=1 才启用。
+  if (process.env.HOSTED || process.env.LOCAL_CLAUDE !== "1") return false;
   return Boolean(findClaudeBin());
 }
 

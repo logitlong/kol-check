@@ -93,12 +93,12 @@
       <button id="go" class="go">开始验证</button>
     </div>
     <div class="field" id="maxRow">
-      <label for="maxPosts">分析最近多少条帖子</label>
+      <label for="maxPosts">分析最近多少条帖子（抓帖消耗的 twitterapi.io 积分为估算，新账号送 10 万积分）</label>
       <select id="maxPosts">
-        <option value="200">最近 200 条（最快，抓帖约 $0.03）</option>
-        <option value="500" selected>最近 500 条（推荐，抓帖约 $0.08）</option>
-        <option value="1000">最近 1000 条（抓帖约 $0.15）</option>
-        <option value="3200">最近 3200 条（最全，抓帖约 $0.5，要等很久）</option>
+        <option value="200">最近 200 条（最快，约 3 千积分）</option>
+        <option value="500" selected>最近 500 条（推荐，约 8 千积分）</option>
+        <option value="1000">最近 1000 条（约 1.5 万积分）</option>
+        <option value="3200">最近 3200 条（最全，约 5 万积分，要等很久）</option>
       </select>
     </div>
     <div class="hint">贴上博主的 X 主页链接，后台自动读取他的历史帖子并回溯行情。</div>
@@ -149,13 +149,6 @@
         <span id="keysSaved" class="hint" style="margin:0"></span>
       </div>
 
-      <div id="localRow" hidden>
-        <h3>本机 Claude（不填 AI key 时使用）</h3>
-        <div class="row">
-          <select id="model"></select>
-          <select id="effort"></select>
-        </div>
-      </div>
     </details>
   </section>
 
@@ -169,7 +162,7 @@
         <li>登录后进入后台（Dashboard），页面上会显示你的 <b>API Key</b>，点复制。</li>
         <li>回到本页，展开「我的 Key」，粘贴到第 ① 栏，点「保存到这台设备」。</li>
       </ol>
-      <p>费用：新账号一般有少量免费额度，够试几百条帖子。之后大约每 1000 条帖子 0.15 美元，分析一个博主最近 500 条不到 0.1 美元。它是第三方服务，不是 X 官方的；价格和额度以它后台显示的为准。免费账号有请求频率限制，抓帖会慢一些。</p>
+      <p>费用：新注册会送约 <b>1 美元的额度（10 万积分，10 万积分 = 1 美元）</b>，不用绑卡，够分析很多个博主，一般用不完。用完以后按量充值，按它公布的价格大约每 1000 条帖子 0.15 美元（约 1.5 万积分）。它是第三方服务，不是 X 官方的；实际扣多少积分以它后台显示的为准。免费账号有请求频率限制，抓帖会慢一些。</p>
 
       <h3>② AI 的 key（用来读懂每条帖子在说什么）</h3>
       <p>任选一家你已经有账号的即可。步骤都一样：打开后台 → 创建 API Key → 复制 → 回到本页「我的 Key」里选对服务商并粘贴。大多数服务商需要先充值一点余额，key 才能用。</p>
@@ -295,8 +288,7 @@ function refreshStatus() {
   const parts = [];
   parts.push(hasFetch ? `<span class="ok">抓帖 key ✓</span>` : `<span class="missing">还没填抓帖 key</span>`);
   parts.push(k.aiKey ? `<span class="ok">AI：${esc(provider()?.label.split("（")[0])} ✓</span>`
-    : caps.localClaude ? `<span class="ok">AI：本机 Claude ✓</span>`
-    : caps.serverAiKey ? `<span class="ok">AI ✓</span>` : `<span class="missing">还没填 AI key</span>`);
+    : caps.localClaude || caps.serverAiKey ? `<span class="ok">AI ✓</span>` : `<span class="missing">还没填 AI key</span>`);
   const need = !hasFetch || !hasAi;
   $("keyStatus").innerHTML = parts.join("　") + (need ? `　<a href="#" id="openKeys">去填写</a>` : "");
   $("openKeys")?.addEventListener("click", (e) => { e.preventDefault(); $("keysBox").open = true; $("keysBox").scrollIntoView({ behavior: "smooth" }); });
@@ -319,7 +311,7 @@ function setBusy(b) { $("go").disabled = b; $("go").textContent = b ? "分析中
 async function run() {
   $("error").hidden = true;
   const k = currentKeys();
-  const body = { source, input: $("handle").value, maxPosts: Number($("maxPosts").value), model: $("model").value, effort: $("effort").value };
+  const body = { source, input: $("handle").value, maxPosts: Number($("maxPosts").value) };
   if (k.fetchKey) body.fetchKey = k.fetchKey;
   if (k.aiKey) body.ai = { provider: k.provider, apiKey: k.aiKey, model: k.model, baseUrl: k.baseUrl, vision: k.vision };
   setBusy(true);
@@ -438,9 +430,6 @@ fetch("/api/config").then((r) => r.json()).then((c) => {
   caps = c;
   $("provider").innerHTML = c.providers.map((p) => `<option value="${esc(p.id)}">${esc(p.label)}</option>`).join("");
   $("providerGuide").innerHTML = c.providers.filter((p) => p.keyUrl).map((p) => `<li><b>${esc(p.label)}</b>：<a href="${esc(p.keyUrl)}" target="_blank" rel="noopener noreferrer">打开 Key 页面</a>${p.keyHint ? `，${esc(p.keyHint)}` : ""}${p.defaultModel ? `；模型示例 <code>${esc(p.defaultModel)}</code>` : ""}${p.vision ? "；默认模型能看图" : ""}</li>`).join("");
-  $("model").innerHTML = c.models.map((m) => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join("");
-  $("effort").innerHTML = c.efforts.map((e) => `<option value="${esc(e.id)}">${esc(e.label)}</option>`).join("");
-  $("localRow").hidden = !c.localClaude;
   loadKeys();
   const k = currentKeys();
   refreshStatus();
